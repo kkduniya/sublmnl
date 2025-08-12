@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/components/.jsx", "src/server/models/theme.ts", "src/server/models/userSettings.js", "src/app/api/auth/reset-password/route.js", "src/app/api/auth/forgot-password/route.js", "src/server/models/passwordReset.js", "src/lib/nodemailer.js", "src/app/api/stripe/reactivate-subscription/route.js", "src/app/api/stripe/cancel-subscription/route.js", "src/app/api/stripe/payment-details/route.js", "src/app/api/stripe/create-checkout/route.js", "src/components/stripe/admin/SubscriptionsTable.jsx", "src/components/stripe/account/SubscriptionManager.jsx", "src/app/account/subscription/page.jsx", "src/app/dashboard/payments/page.jsx", "src/app/dashboard/subscriptions/page.jsx", "src/app/api/stripe/webhook/route.js", "src/components/stripe/admin/ActiveSubscriptions.jsx", "src/components/stripe/admin/PaymentsTable.jsx"],
+  "exclude": ["node_modules"]
+}
+
