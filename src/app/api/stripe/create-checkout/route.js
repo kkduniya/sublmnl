@@ -37,8 +37,8 @@ export async function POST(req) {
         userId: session.user.id,
         ...(audioId ? { audioId } : {}),
       },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}pricing`,
     })
 
     return NextResponse.json({ url: checkoutSession.url })
