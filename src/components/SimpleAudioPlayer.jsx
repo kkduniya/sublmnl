@@ -31,17 +31,23 @@ export default function SimpleAudioPlayer({ audioUrl, onError, showAffirmations 
     }
   }, [affirmationsVolume, showAffirmations])
 
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     if (!audioRef.current) return
     if (isPlaying) {
       audioRef.current.pause()
       setIsPlaying(false)
     } else {
-      audioRef.current.play().catch((err) => {
+      try {
+        // Some browsers (Safari/macOS) need a load() call before first play
+        if (audioRef.current.readyState < 2) {
+          audioRef.current.load()
+        }
+        await audioRef.current.play()
+        setIsPlaying(true)
+      } catch (err) {
         console.error("Play error:", err)
         if (onError) onError(err)
-      })
-      setIsPlaying(true)
+      }
     }
   }
 
@@ -76,7 +82,9 @@ export default function SimpleAudioPlayer({ audioUrl, onError, showAffirmations 
       <audio
         ref={audioRef}
         src={audioUrl}
-        preload="auto"
+        preload="metadata"
+        crossOrigin="anonymous"
+        playsInline
         onLoadedMetadata={() => setDuration(audioRef.current.duration)}
         onTimeUpdate={() => setCurrentTime(audioRef.current.currentTime)}
         onEnded={() => {

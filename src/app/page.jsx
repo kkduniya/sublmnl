@@ -1359,7 +1359,7 @@ export default function Home() {
         <div className="relative z-10 w-full max-w-none">
           <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
             <iframe
-              src="https://player.vimeo.com/video/1100595856?background=1&autoplay=1&muted=1"
+              src="https://player.vimeo.com/video/1100595856?background=1&autoplay=1&muted=1&autopause=0"
               frameBorder="0"
               allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
               allowFullScreen

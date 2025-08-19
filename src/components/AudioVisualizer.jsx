@@ -31,6 +31,14 @@ export default function AudioVisualizer({ audioElement, isPlaying, themeColor, t
     if (audioElement) {
       try {
         initializeAudioContext()
+        // Safari requires resuming context on user gesture
+        const resume = () => {
+          if (audioContextRef.current && audioContextRef.current.state === "suspended") {
+            audioContextRef.current.resume().catch(() => {})
+          }
+        }
+        audioElement.addEventListener("play", resume, { once: false })
+        audioElement.addEventListener("click", resume, { once: false })
       } catch (error) {
         console.error("Error initializing audio context:", error)
       }

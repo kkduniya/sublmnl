@@ -1,13 +1,26 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { OpenAI } from "openai"
+
+// Lightweight in-memory rate limiter per IP
+const requestsByIp = new Map()
+const WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+const MAX_REQUESTS = 20 // per window
 
 export async function POST(request) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
+    // Rate limit by IP
+    const ipHeader = request.headers.get("x-forwarded-for") || "unknown"
+    const clientIp = ipHeader.split(",")[0].trim()
+    const now = Date.now()
+    const entry = requestsByIp.get(clientIp) || { count: 0, reset: now + WINDOW_MS }
+    if (now > entry.reset) {
+      entry.count = 0
+      entry.reset = now + WINDOW_MS
+    }
+    entry.count += 1
+    requestsByIp.set(clientIp, entry)
+    if (entry.count > MAX_REQUESTS) {
+      return NextResponse.json({ success: false, message: "Rate limit exceeded. Try again later." }, { status: 429 })
     }
 
     // Parse request body
@@ -19,42 +32,28 @@ export async function POST(request) {
     }
 
     // Try to generate affirmations using OpenAI if API key exists
-    const openaiApiKey = process.env.NEXT_OPENAI_API_KEY
+    const openaiApiKey = process.env.OPENAI_API_KEY
 
     if (openaiApiKey && openaiApiKey.startsWith("sk-")) {
       try {
-        // Attempt to call OpenAI API
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openaiApiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are an expert in creating powerful, effective affirmations that help people achieve their goals.",
-              },
-              {
-                role: "user",
-                content: `Generate 5 powerful, positive affirmations for the category "${category}" based on this goal: "${goal}". 
-                Each affirmation should be in the present tense, be positive, personal (using "I"), and specific.
-                Format the response as a JSON array of strings, with no additional text.`,
-              },
-            ],
-            temperature: 0.7,
-          }),
+        const client = new OpenAI({ apiKey: openaiApiKey })
+        const completion = await client.chat.completions.create({
+          model: "gpt-4o-mini",
+          temperature: 0.7,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an expert in creating powerful, effective affirmations that help people achieve goals.",
+            },
+            {
+              role: "user",
+              content: `Generate 6 powerful, positive affirmations for the category "${category}" based on this goal: "${goal}". Return ONLY a JSON array of strings, no extra text. Each item should be first-person present tense beginning with 'I'.`,
+            },
+          ],
         })
 
-        if (!response.ok) {
-          throw new Error(`OpenAI API error: ${response.status}`)
-        }
-
-        const data = await response.json()
-        const content = data.choices[0]?.message?.content
+        const content = completion.choices[0]?.message?.content
 
         // Parse the response as JSON
         let affirmations
@@ -81,10 +80,7 @@ export async function POST(request) {
           }
         }
 
-        return NextResponse.json({
-          success: true,
-          affirmations: affirmations,
-        })
+        return NextResponse.json({ success: true, affirmations })
       } catch (error) {
         console.error("OpenAI API error:", error)
         // Fall through to use fallback affirmations

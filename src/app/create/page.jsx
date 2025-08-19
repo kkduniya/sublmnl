@@ -42,7 +42,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { categories } from "@/server/constant";
 import { set } from "react-hook-form";
-import { initializeOpenAI, generateAffirmationsWithAI } from "@/lib/openai";
+// import { initializeOpenAI, generateAffirmationsWithAI } from "@/lib/openai";
 
 export default function CreatePage() {
   const [step, setStep] = useState(1);
@@ -439,6 +439,65 @@ export default function CreatePage() {
     }
   };
 
+  // const handleGenerateAffirmations = async () => {
+  //   setError("");
+
+  //   if (!formData.category && !formData.customOnly) {
+  //     setError("Please select a category first");
+  //     return;
+  //   }
+
+  //   if (!formData.goal && !formData.customOnly) {
+  //     setError("Please enter your goal first");
+  //     return;
+  //   }
+
+  //   setIsGenerating(true);
+
+  //   try {
+  //     // Simulate API call to generate affirmations
+  //     initializeOpenAI();
+  //     let generatedAffirmations;
+
+  //     // Use the mock data if in development mode or testing
+  //     if (
+  //       process.env.NODE_ENV === "development" &&
+  //       process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
+  //     ) {
+  //       // Simulate API call to generate affirmations
+  //       await new Promise((resolve) => setTimeout(resolve, 1500));
+  //       generatedAffirmations =
+  //         categories.find((cat) => cat.id === formData.category)
+  //           ?.affirmations || [];
+  //     } else {
+  //       // Generate affirmations using OpenAI
+  //       generatedAffirmations = await generateAffirmationsWithAI(
+  //         categories.find((cat) => cat.id === formData.category)?.name ||
+  //           formData.category,
+  //         formData.goal,
+  //         6 // Number of affirmations to generate
+  //       );
+  //     }
+  //     // Mock generated affirmations based on category
+  //     let mockAffirmations = [];
+
+  //     mockAffirmations = categories.find(
+  //       (cat) => cat.id === formData.category
+  //     ).affirmations;
+  //     setGeneratedAffirmations(generatedAffirmations);
+  //     updateFormData({
+  //       affirmations: generatedAffirmations || mockAffirmations,
+  //     });
+  //     setSelectedAffirmations([...generatedAffirmations]);
+  //     setCustomAffirmations([...generatedAffirmations]);
+  //   } catch (error) {
+  //     console.error("Error generating affirmations:", error);
+  //     setError("Failed to generate affirmations. Please try again.");
+  //   } finally {
+  //     setIsGenerating(false);
+  //   }
+  // };
+
   const handleGenerateAffirmations = async () => {
     setError("");
 
@@ -455,8 +514,6 @@ export default function CreatePage() {
     setIsGenerating(true);
 
     try {
-      // Simulate API call to generate affirmations
-      initializeOpenAI();
       let generatedAffirmations;
 
       // Use the mock data if in development mode or testing
@@ -464,19 +521,28 @@ export default function CreatePage() {
         process.env.NODE_ENV === "development" &&
         process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
       ) {
-        // Simulate API call to generate affirmations
-        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         generatedAffirmations =
           categories.find((cat) => cat.id === formData.category)
             ?.affirmations || [];
       } else {
-        // Generate affirmations using OpenAI
-        generatedAffirmations = await generateAffirmationsWithAI(
+        // Request affirmations from the secure server route
+        const displayCategory =
           categories.find((cat) => cat.id === formData.category)?.name ||
-            formData.category,
-          formData.goal,
-          6 // Number of affirmations to generate
-        );
+          formData.category;
+
+        const res = await fetch("/api/affirmations/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category: displayCategory, goal: formData.goal }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to generate affirmations");
+        }
+
+        const data = await res.json();
+        generatedAffirmations = data.affirmations || [];
       }
       // Mock generated affirmations based on category
       let mockAffirmations = [];
