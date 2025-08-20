@@ -85,7 +85,22 @@ export default function SimpleAudioPlayer({ audioUrl, onError, showAffirmations 
         preload="metadata"
         crossOrigin="anonymous"
         playsInline
-        onLoadedMetadata={() => setDuration(audioRef.current.duration)}
+        // onLoadedMetadata={() => setDuration(audioRef.current.duration)}
+        onLoadedMetadata={() => {
+          setDuration(audioRef.current.duration)
+
+          // ✅ Set media session metadata (removes artist name)
+          if ("mediaSession" in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: "Success Affirmations",
+              album: "Sublmnl",
+              artist: "Sublmnl",
+              artwork: [
+                { src: "/images/banner.png", sizes: "512x512", type: "image/png" }
+              ]
+            })
+          }
+        }}
         onTimeUpdate={() => setCurrentTime(audioRef.current.currentTime)}
         onEnded={() => {
           setIsPlaying(false)

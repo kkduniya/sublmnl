@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { Volume2, VolumeX } from "lucide-react"
 import { prepareAudio, syncSpeechWithMusic as syncSpeechWithAudio } from "@/lib/audio-sync"
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext"
+import PreviewPopup from "./PreviewPopup"
 
 export default function EnhancedAudioPlayer({
   audioUrl,
@@ -28,7 +29,8 @@ export default function EnhancedAudioPlayer({
   stopOnSettingsChange = true, // New prop to control stopping on settings change
   speed= 1.0, // Playback speed
   subscriptionStatus,
-  handleSaveToLibrary
+  handleSaveToLibrary,
+  handlePricingForLoggedInUser
 }) {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false)
@@ -62,6 +64,9 @@ export default function EnhancedAudioPlayer({
   const affirmationTimeoutRef = useRef(null)
   const [speakAffirmations, setSpeakAffirmations] = useState(true)
   const completedAffirmationsRef = useRef(false) // Track if we've completed all affirmations
+  const hasPreviewedRef = useRef(false)
+  const previewTimeoutRef = useRef(null)
+  const [showPreviewPopup, setShowPreviewPopup] = useState(false)
 
   // Update the ref when the prop changes
   useEffect(() => {
@@ -451,29 +456,89 @@ export default function EnhancedAudioPlayer({
   }
 
   
+  // const togglePlayPause = () => {
+  //   if (!audioRef.current) return
+    
+  //   if(!user){
+  //     handleSaveToLibrary()
+  //     return
+  //   }
+    
+  //   if(!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments){
+  //     handleSaveToLibrary()
+  //     return
+  //   }
+
+  //   if (isPlaying) {
+  //     // If currently playing, pause everything
+  //     audioRef.current.pause()
+
+  //     // Stop speech synthesis
+  //     if (speechSynthesisRef.current) {
+  //       speechSynthesisRef.current.cancel()
+  //     }
+
+  //     // Clear all timers
+  //     if (affirmationTimerRef.current) {
+  //       clearTimeout(affirmationTimerRef.current)
+  //       affirmationTimerRef.current = null
+  //     }
+
+  //     if (affirmationTimeoutRef.current) {
+  //       clearTimeout(affirmationTimeoutRef.current)
+  //       affirmationTimeoutRef.current = null
+  //     }
+
+  //     setIsPlaying(false)
+  //     isPlayingRef.current = false
+  //     setIsAffirmationPlaying(false)
+  //     onPlayStateChange(false)
+  //   } else {
+  //     // If not playing, start everything
+  //     // Reset the completed affirmations flag when starting playback
+  //     completedAffirmationsRef.current = false
+
+  //     // Reset current affirmation index to start from the beginning
+  //     setCurrentAffirmationIndex(0)
+
+  //     // Start playback
+  //     const playPromise = audioRef.current.play()
+
+  //     if (playPromise !== undefined) {
+  //       playPromise
+  //         .then(() => {
+  //           setIsPlaying(true)
+  //           isPlayingRef.current = true
+  //           onPlayStateChange(true)
+  //           // Start affirmations if we have them and they're not disabled
+  //           if (affirmations.length > 0 && !disableAffirmations) {
+  //             console.log("enter data")
+  //             // Small delay to ensure music starts first
+  //             setTimeout(() => {
+  //               startAffirmations()
+  //             }, 1000)
+  //           }
+  //         })
+  //         .catch((err) => {
+  //           console.error("Play error:", err)
+  //           setError(`Failed to play audio: ${err.message}`)
+  //           if (onError) onError(err)
+  //         })
+  //     }
+  //   }
+  // }
+
   const togglePlayPause = () => {
     if (!audioRef.current) return
-    
-    if(!user){
-      handleSaveToLibrary()
-      return
-    }
-    
-    if(!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments){
-      handleSaveToLibrary()
-      return
-    }
 
+    // Pause if already playing
     if (isPlaying) {
-      // If currently playing, pause everything
       audioRef.current.pause()
 
-      // Stop speech synthesis
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel()
       }
 
-      // Clear all timers
       if (affirmationTimerRef.current) {
         clearTimeout(affirmationTimerRef.current)
         affirmationTimerRef.current = null
@@ -484,44 +549,121 @@ export default function EnhancedAudioPlayer({
         affirmationTimeoutRef.current = null
       }
 
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current)
+        previewTimeoutRef.current = null
+      }
+
       setIsPlaying(false)
       isPlayingRef.current = false
       setIsAffirmationPlaying(false)
       onPlayStateChange(false)
-    } else {
-      // If not playing, start everything
-      // Reset the completed affirmations flag when starting playback
-      completedAffirmationsRef.current = false
+      return
+    }
 
-      // Reset current affirmation index to start from the beginning
-      setCurrentAffirmationIndex(0)
+    // --- If not playing, start ---
+    completedAffirmationsRef.current = false
+    setCurrentAffirmationIndex(0)
 
-      // Start playback
-      const playPromise = audioRef.current.play()
+    const playPromise = audioRef.current.play()
 
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setIsPlaying(true)
-            isPlayingRef.current = true
-            onPlayStateChange(true)
-            // Start affirmations if we have them and they're not disabled
-            if (affirmations.length > 0 && !disableAffirmations) {
-              console.log("enter data")
-              // Small delay to ensure music starts first
-              setTimeout(() => {
-                startAffirmations()
-              }, 1000)
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          setIsPlaying(true)
+          isPlayingRef.current = true
+          onPlayStateChange(true)
+
+          // ---- Guest users only ----
+          if (!user) {
+            // If already previewed once, block immediately
+            if (hasPreviewedRef.current) {
+              audioRef.current.pause()
+              setIsPlaying(false)
+              isPlayingRef.current = false
+              onPlayStateChange(false)
+              // Persist pending audio for guests
+              try {
+                if (audioUrl && affirmations && affirmations.length > 0) {
+                  const data = {
+                    affirmations,
+                    musicTrack: null,
+                    voiceType: voiceSettings?.voice || "default",
+                    voiceName: voiceSettings?.voice || "default",
+                    voiceLanguage: "en-US",
+                    voicePitch: 0,
+                    voiceSpeed: 0,
+                    volume: 0.3,
+                    audioUrl,
+                    category: "General",
+                    repetitionInterval: repetitionInterval || 10,
+                  }
+                  localStorage.setItem("pendingAudioSave", JSON.stringify(data))
+                }
+              } catch {}
+              setShowPreviewPopup(true)
+              return
             }
-          })
-          .catch((err) => {
-            console.error("Play error:", err)
-            setError(`Failed to play audio: ${err.message}`)
-            if (onError) onError(err)
-          })
-      }
+
+            // First preview → allow 5s
+            previewTimeoutRef.current = setTimeout(() => {
+              audioRef.current.pause()
+              setIsPlaying(false)
+              isPlayingRef.current = false
+              onPlayStateChange(false)
+              hasPreviewedRef.current = true // 🔒 Mark as used
+              try {
+                if (audioUrl && affirmations && affirmations.length > 0) {
+                  const data = {
+                    affirmations,
+                    musicTrack: null,
+                    voiceType: voiceSettings?.voice || "default",
+                    voiceName: voiceSettings?.voice || "default",
+                    voiceLanguage: "en-US",
+                    voicePitch: 0,
+                    voiceSpeed: 0,
+                    volume: 0.3,
+                    audioUrl,
+                    category: "General",
+                    repetitionInterval: repetitionInterval || 10,
+                  }
+                  localStorage.setItem("pendingAudioSave", JSON.stringify(data))
+                }
+              } catch {}
+              setShowPreviewPopup(true)
+            }, 5000)
+            return
+          }
+
+          // ---- Logged in users without subscription ----
+          if (user && (!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments)) {
+            // Stop playback and show pricing popup
+            audioRef.current.pause()
+            setIsPlaying(false)
+            isPlayingRef.current = false
+            onPlayStateChange(false)
+            // This will trigger the pricing popup in the parent component
+            if (handlePricingForLoggedInUser) {
+              handlePricingForLoggedInUser()
+            }
+            return
+          }
+
+          // ---- Start affirmations for subscribed users ----
+          if (affirmations.length > 0 && !disableAffirmations) {
+            setTimeout(() => {
+              startAffirmations()
+            }, 1000)
+          }
+        })
+        .catch((err) => {
+          console.error("Play error:", err)
+          setError(`Failed to play audio: ${err.message}`)
+          if (onError) onError(err)
+        })
     }
   }
+
 
   // New function to start playback consistently
   const startPlayback = () => {
@@ -1233,6 +1375,24 @@ export default function EnhancedAudioPlayer({
           <audio src={audioUrl} controls className="w-full" onError={(e) => console.error("Raw audio error:", e)} />
         </div>
       )}
+
+      {/* Preview Popup */}
+      <PreviewPopup
+        open={showPreviewPopup}
+        onOpenChange={setShowPreviewPopup}
+        onCreateAccount={() => {
+          setShowPreviewPopup(false)
+          // This will be handled by the parent component
+          if (handleSaveToLibrary) {
+            handleSaveToLibrary()
+          }
+        }}
+        onClose={() => {
+          setShowPreviewPopup(false)
+          localStorage.removeItem("pendingAudioSave");
+          // Do NOT reset hasPreviewedRef here; keep preview locked after first use
+        }}
+      />
     </div>
   )
 }

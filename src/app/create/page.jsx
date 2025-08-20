@@ -42,6 +42,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { categories } from "@/server/constant";
 import { set } from "react-hook-form";
+import AccountCreationPopup from "@/components/create/AccountCreationPopup";
+import PricingPopup from "@/components/create/PricingPopup";
 // import { initializeOpenAI, generateAffirmationsWithAI } from "@/lib/openai";
 
 export default function CreatePage() {
@@ -626,6 +628,45 @@ export default function CreatePage() {
   const [tempAudioData, setTempAudioData] = useState(null);
   const [audioTitle, setAudioTitle] = useState("");
   const [titleError, setTitleError] = useState("");
+  
+  // New state for the improved user journey
+  const [showAccountPopup, setShowAccountPopup] = useState(false);
+  const [showPricingPopup, setShowPricingPopup] = useState(false);
+  const [pendingAudioId, setPendingAudioId] = useState(null);
+  const [postLoginRouting, setPostLoginRouting] = useState(false);
+
+  // Persist the current audio (like Save to Library, but without UI)
+  const persistPendingAudio = () => {
+    if (!finalAudioUrl) return;
+    const voiceName = formData.voicePersonaName || formData.voiceType;
+    const data = {
+      affirmations: currentAffirmations,
+      musicTrack: formData.musicTrack,
+      voiceType: formData.voiceType,
+      voiceName,
+      voiceLanguage: "en-US",
+      voicePitch: formData.voicePitch || 0,
+      voiceSpeed: formData.speed || 0,
+      volume: formData.affirmationsVolume,
+      audioUrl: finalAudioUrl,
+      category: formData.category || "General",
+      repetitionInterval: formData.repetitionInterval || 10,
+    };
+    try {
+      localStorage.setItem("pendingAudioSave", JSON.stringify(data));
+    } catch {}
+  };
+
+  const openAccountPopup = () => setShowAccountPopup(true);
+
+  // Wait helper for auth context to populate user.id after login
+  const waitForUserId = async (maxMs = 4000) => {
+    const start = Date.now();
+    while (!user?.id && Date.now() - start < maxMs) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return user?.id || null;
+  };
 
   // Replace your existing save function with this updated version
   const handleSaveToLibrary = async () => {
@@ -657,7 +698,24 @@ export default function CreatePage() {
 
     setTempAudioData(tempData);
 
-    // Generate a default title suggestion
+    // Check if user is authenticated
+    if (!user) {
+      // Persist pending audio, then show account popup
+      persistPendingAudio();
+      setShowAccountPopup(true);
+      return;
+    }
+
+    // Check subscription status (treat any access as valid)
+    if (!subscriptionStatus?._fetched) {
+      await checkUserSubscriptionStatus(user?.id);
+    }
+    if (!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments && !subscriptionStatus?.hasPurchasedAudios && !subscriptionStatus?.hasActivePlan) {
+      setShowPricingPopup(true);
+      return;
+    }
+
+    // User has subscription, proceed with save dialog
     const defaultTitle = formData.musicTrack
       ? `${formData.category || "Custom"} Affirmations with ${
           formData.musicTrack.name
@@ -667,6 +725,37 @@ export default function CreatePage() {
     setAudioTitle(defaultTitle);
     // Open the save dialog with the default title
     setShowSaveDialog(true);
+  };
+
+  // Function to handle pricing popup for logged-in users without subscription
+  const handlePricingForLoggedInUser = () => {
+    if (!finalAudioUrl) {
+      toast({
+        title: "Error",
+        description: "Please generate audio first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Store the audio data temporarily
+    let voiceName = formData.voicePersonaName || formData.voiceType;
+    const tempData = {
+      affirmations: currentAffirmations,
+      musicTrack: formData.musicTrack,
+      voiceType: formData.voiceType,
+      voiceName: voiceName,
+      voiceLanguage: "en-US",
+      voicePitch: formData.voicePitch || 0,
+      voiceSpeed: formData.speed || 0,
+      volume: formData.affirmationsVolume,
+      audioUrl: finalAudioUrl,
+      category: formData.category || "General",
+      repetitionInterval: formData.repetitionInterval || 10,
+    };
+
+    setTempAudioData(tempData);
+    setShowPricingPopup(true);
   };
 
   // Add a new function to handle the actual saving with the title
@@ -787,6 +876,27 @@ export default function CreatePage() {
     }
   };
 
+  // Handle account creation success
+  const handleAccountCreated = async () => {
+    setShowAccountPopup(false);
+    setShowPricingPopup(false);
+    setPostLoginRouting(true); // Defer routing to effect below
+  };
+
+  // Handle account creation popup close
+  const handleAccountPopupClose = () => {
+    setShowAccountPopup(false);
+    localStorage.removeItem("pendingAudioSave");
+    // User can continue editing their audio
+  };
+
+  // Handle pricing popup close
+  const handlePricingPopupClose = () => {
+    setShowPricingPopup(false);
+    localStorage.removeItem("pendingAudioSave");
+    // User can continue editing their audio
+  };
+
   // Function to check user's subscription status and one-time payments
   const checkUserSubscriptionStatus = async (userId) => {
     try {
@@ -799,7 +909,8 @@ export default function CreatePage() {
         throw new Error(data.message || "Failed to check subscription status");
       }
 
-      setSubscriptionStatus(data);
+      setSubscriptionStatus({ ...data, _fetched: true });
+      return { ...data, _fetched: true };
     } catch (error) {
       console.error("Error checking subscription status:", error);
       return false;
@@ -1017,6 +1128,24 @@ export default function CreatePage() {
       setCurrentPlayingTrackId(null);
     };
   };
+
+  // Post-login routing effect: only run after login, when user and subscriptionStatus are loaded
+  useEffect(() => {
+    if (!postLoginRouting) return;
+    if (!user?.id) return; // Wait for user
+    if (!subscriptionStatus?._fetched) return; // Wait for status
+    setPostLoginRouting(false);
+    if (
+      subscriptionStatus.hasActiveSubscription ||
+      subscriptionStatus.hasOneTimePayments ||
+      subscriptionStatus.hasPurchasedAudios ||
+      subscriptionStatus.hasActivePlan
+    ) {
+      router.push("/dashboard/audios");
+    } else {
+      setShowPricingPopup(true);
+    }
+  }, [user, subscriptionStatus, postLoginRouting]);
 
   return (
     <div className="min-h-screen py-8 px-4 md:px-8">
@@ -1923,6 +2052,7 @@ export default function CreatePage() {
                             speed={formData.speed}
                             subscriptionStatus={subscriptionStatus}
                             handleSaveToLibrary={handleSaveToLibrary}
+                            handlePricingForLoggedInUser={handlePricingForLoggedInUser}
                           />
                         </div>
 
@@ -2137,6 +2267,22 @@ export default function CreatePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Account Creation Popup */}
+      <AccountCreationPopup
+        open={showAccountPopup}
+        onOpenChange={setShowAccountPopup}
+        onAccountCreated={handleAccountCreated}
+        onClose={handleAccountPopupClose}
+      />
+
+      {/* Pricing Popup */}
+      <PricingPopup
+        open={showPricingPopup}
+        onOpenChange={setShowPricingPopup}
+        onClose={handlePricingPopupClose}
+        audioId={pendingAudioId}
+      />
     </div>
   );
 }

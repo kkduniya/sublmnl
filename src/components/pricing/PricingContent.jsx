@@ -84,6 +84,7 @@ export default function PricingContent() {
             <li className="flex items-center text-white"><span className="text-pink-400 mr-2">✔</span>High-definition audio quality</li>
             <li className="flex items-center text-white"><span className="text-pink-400 mr-2">✔</span>Edit your tracks anytime</li>
             <li className="flex items-center text-white"><span className="text-pink-400 mr-2">✔</span>Ideal for active manifestors and daily listeners</li>
+            <li className="flex items-center text-white"><span className="text-pink-400 mr-2">✔</span>Cancel anytime</li>
           </ul>
           <CheckoutButton
             priceId={STRIPE_PRICE_IDS.subscription}
