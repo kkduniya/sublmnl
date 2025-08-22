@@ -48,17 +48,29 @@ export async function sendContactFormEmail(formData) {
     to: `hello@sublmnl.ca`, // Send to your admin email
     subject: `New Contact Form Submission: ${subject}`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #4169E1;">New Contact Form Submission</h2>
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+  
+      <div style="background-color: #4169E1; padding: 20px; text-align: center;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 22px;">New Contact Form Submission</h2>
+      </div>
+      
+      <div style="padding: 20px; color: #333333; line-height: 1.6;">
         <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Email:</strong> <a href="mailto:${email}" style="color: #4169E1; text-decoration: none;">${email}</a></p>
         <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+
+        <p style="margin-top: 20px; font-weight: bold;">Message:</p>
+        <div style="background-color: #f8f9fb; padding: 15px; border-left: 4px solid #4169E1; border-radius: 4px; margin: 15px 0; font-size: 15px; white-space: pre-line;">
           ${message.replace(/\n/g, "<br>")}
         </div>
-        <p>You can reply directly to this email to respond to the sender.</p>
+
+        <p style="margin-top: 20px; font-size: 14px; color: #555;">You can reply directly to this email to respond to the sender.</p>
       </div>
+
+      <div style="background-color: #f1f4f9; padding: 12px; text-align: center; font-size: 13px; color: #666;">
+       Contact Form Alert · ${new Date().toLocaleDateString()}
+      </div>
+    </div>
     `,
     replyTo: email, // Allow direct reply to the sender
   }
@@ -68,20 +80,31 @@ export async function sendContactFormEmail(formData) {
     from: process.env.EMAIL_USER,
     to: email,
     subject: `Thank you for contacting Sublmnl - ${subject}`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #4169E1;">Thank You for Contacting Us</h2>
-        <p>Hello ${name},</p>
+    html:`
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+      <div style="background-color: #4169E1; padding: 20px; text-align: center;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 22px;">Thank You for Contacting Us</h2>
+      </div>
+
+      <div style="padding: 20px; color: #333333; line-height: 1.6;">
+        <p style="font-size: 16px;">Hello <strong>${name}</strong>,</p>
         <p>We've received your message and will get back to you as soon as possible, usually within 24 hours.</p>
-        <p><strong>Your message details:</strong></p>
+
+        <p style="margin-top: 20px; font-weight: bold;">Your message details:</p>
         <p><strong>Subject:</strong> ${subject}</p>
-        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 4px; margin: 15px 0;">
+
+        <div style="background-color: #f8f9fb; padding: 15px; border-left: 4px solid #4169E1; border-radius: 4px; margin: 15px 0; font-size: 15px; white-space: pre-line;">
           ${message.replace(/\n/g, "<br>")}
         </div>
+
         <p>If you have any additional information to add, please feel free to reply to this email.</p>
-        <p>Thanks,<br>The Sublmnl Team</p>
+        <p style="margin-top: 25px;">Thanks,<br><strong>The Sublmnl Team</strong></p>
       </div>
-    `,
+      <div style="background-color: #f1f4f9; padding: 15px; text-align: center; font-size: 13px; color: #666;">
+        © ${new Date().getFullYear()} Sublmnl. All rights reserved.
+      </div>
+    </div>
+    `
   }
 
   try {
@@ -89,7 +112,7 @@ export async function sendContactFormEmail(formData) {
     await transporter.sendMail(adminMailOptions)
 
     // Send confirmation email to user
-    // await transporter.sendMail(userMailOptions)
+    await transporter.sendMail(userMailOptions)
 
     return { success: true }
   } catch (error) {

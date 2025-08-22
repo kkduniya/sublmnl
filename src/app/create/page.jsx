@@ -427,19 +427,19 @@ export default function CreatePage() {
     setError("");
   };
 
-  const handleAffirmationToggle = (affirmation) => {
-    if (selectedAffirmations.includes(affirmation)) {
-      setSelectedAffirmations(
-        selectedAffirmations.filter((a) => a !== affirmation)
-      );
-      setCustomAffirmations(
-        selectedAffirmations.filter((a) => a !== affirmation)
-      );
-    } else {
-      setSelectedAffirmations([...selectedAffirmations, affirmation]);
-      setCustomAffirmations([...selectedAffirmations, affirmation]);
-    }
-  };
+  // const handleAffirmationToggle = (affirmation) => {
+  //   if (selectedAffirmations.includes(affirmation)) {
+  //     setSelectedAffirmations(
+  //       selectedAffirmations.filter((a) => a !== affirmation)
+  //     );
+  //     setCustomAffirmations(
+  //       selectedAffirmations.filter((a) => a !== affirmation)
+  //     );
+  //   } else {
+  //     setSelectedAffirmations([...selectedAffirmations, affirmation]);
+  //     setCustomAffirmations([...selectedAffirmations, affirmation]);
+  //   }
+  // };
 
   // const handleGenerateAffirmations = async () => {
   //   setError("");
@@ -499,6 +499,28 @@ export default function CreatePage() {
   //     setIsGenerating(false);
   //   }
   // };
+
+  const handleAffirmationToggle = (affirmation) => {
+    const isSelected = selectedAffirmations.includes(affirmation);
+
+    if (isSelected) {
+      // Unselect: remove from both the selected list and the final custom list
+      const newSelected = selectedAffirmations.filter((a) => a !== affirmation);
+      const newCustom = customAffirmations.filter((a) => a !== affirmation);
+      setSelectedAffirmations(newSelected);
+      setCustomAffirmations(newCustom);
+      updateFormData({ affirmations: newCustom });
+    } else {
+      // Select: add to selected list and append to final custom list if not present
+      const newSelected = [...selectedAffirmations, affirmation];
+      const newCustom = customAffirmations.includes(affirmation)
+        ? customAffirmations
+        : [...customAffirmations, affirmation];
+      setSelectedAffirmations(newSelected);
+      setCustomAffirmations(newCustom);
+      updateFormData({ affirmations: newCustom });
+    }
+  };
 
   const handleGenerateAffirmations = async () => {
     setError("");

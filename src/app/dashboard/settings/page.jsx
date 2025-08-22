@@ -21,6 +21,7 @@ export default function SettingsPage() {
   })
   const [audioSettings, setAudioSettings] = useState({
     affirmationsVolume: 0.2,
+    frequencyVolume:0.5,
     repetitionInterval: 10,
     musicVolume: 1.0,
     speed: 1,
@@ -230,6 +231,7 @@ export default function SettingsPage() {
         // Update localStorage for immediate effect
         localStorage.setItem("musicVolume", audioSettings.musicVolume.toString())
         localStorage.setItem("affirmationsVolume", audioSettings.affirmationsVolume.toString())
+        localStorage.setItem("frequencyVolume", audioSettings.frequencyVolume.toString())
         localStorage.setItem("repetitionInterval", audioSettings.repetitionInterval.toString())
         localStorage.setItem("speed", audioSettings.speed.toString())
 
@@ -439,6 +441,25 @@ export default function SettingsPage() {
                     className="w-full"
                   />
                   <p className="text-xs text-gray-500 mt-1">Control the volume of Sublmnl affirmation voice.</p>
+                </div>
+
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="frequencyVolume" className="block text-sm font-medium text-gray-300">
+                      Frequency Volume
+                    </label>
+                    <span className="text-sm text-gray-400">{Math.round(audioSettings.frequencyVolume * 100)}%</span>
+                  </div>
+                  <Slider
+                    id="frequencyVolume"
+                    value={[audioSettings.frequencyVolume]}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onValueChange={(value) => handleAudioSettingChange("frequencyVolume", value[0])}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Control the volume of frequency.</p>
                 </div>
 
                 <div className="mb-6">

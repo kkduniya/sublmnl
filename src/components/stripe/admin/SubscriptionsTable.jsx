@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, MoreHorizontal } from "lucide-react"
 import { formatDistanceToNow, format } from "date-fns"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/context/AuthContext"
 
 export function SubscriptionsTable({ isAdmin = false }) {
@@ -18,6 +19,11 @@ export function SubscriptionsTable({ isAdmin = false }) {
   const [statusFilter, setStatusFilter] = useState("all")
   const { user } = useAuth()
 
+  // State for dialogs
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false)
+  const [postCancelOpen, setPostCancelOpen] = useState(false)
+  const [selectedSubscription, setSelectedSubscription] = useState(null)
+
   useEffect(() => {
     fetchSubscriptions()
   }, [isAdmin, user?.id])
@@ -26,7 +32,6 @@ export function SubscriptionsTable({ isAdmin = false }) {
     try {
       const params = new URLSearchParams()
       if (isAdmin) params.append("admin", "true")
-      // if (user?.id) params.append("userId", user?.id)
 
       const response = await fetch(`/api/admin/subscriptions?${params}`)
       const data = await response.json()
@@ -43,16 +48,20 @@ export function SubscriptionsTable({ isAdmin = false }) {
     }
   }
 
-  const handleCancelSubscription = async (subscriptionId) => {
+  const handleCancelSubscription = async () => {
+    if (!selectedSubscription) return
+
     try {
       const response = await fetch("/api/stripe/cancel-subscription", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptionId }),
+        body: JSON.stringify({ subscriptionId: selectedSubscription.stripeSubscriptionId }),
       })
 
       if (response.ok) {
-        fetchSubscriptions() // Refresh the data
+        await fetchSubscriptions()
+        setConfirmCancelOpen(false)
+        setPostCancelOpen(true)
       } else {
         console.error("Failed to cancel subscription")
       }
@@ -70,7 +79,8 @@ export function SubscriptionsTable({ isAdmin = false }) {
       })
 
       if (response.ok) {
-        fetchSubscriptions() // Refresh the data
+        fetchSubscriptions()
+        setPostCancelOpen(false)
       } else {
         console.error("Failed to reactivate subscription")
       }
@@ -119,6 +129,7 @@ export function SubscriptionsTable({ isAdmin = false }) {
 
   return (
     <div className="space-y-4">
+      {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -143,6 +154,7 @@ export function SubscriptionsTable({ isAdmin = false }) {
         </Select>
       </div>
 
+      {/* Table */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -195,13 +207,20 @@ export function SubscriptionsTable({ isAdmin = false }) {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {!subscription.cancelAtPeriodEnd && (
-                          <DropdownMenuItem onClick={() => handleCancelSubscription(subscription.stripeSubscriptionId)} disabled={subscription.userId !== user?.id}
-                            className={`${subscription.userId !== user?.id ? "cursor-not-allowed" : "cursor-pointer"}`}>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedSubscription(subscription)
+                              setConfirmCancelOpen(true)
+                            }}
+                            disabled={subscription.userId !== user?.id}
+                            className={`${subscription.userId !== user?.id ? "cursor-not-allowed" : "cursor-pointer"}`}
+                          >
                             Cancel Subscription Renewal
                           </DropdownMenuItem>
                         )}
                         {subscription.cancelAtPeriodEnd && (
-                          <DropdownMenuItem disabled={subscription.userId !== user?.id}
+                          <DropdownMenuItem
+                            disabled={subscription.userId !== user?.id}
                             className={`${subscription.userId !== user?.id ? "cursor-not-allowed" : "cursor-pointer"}`}
                             onClick={() => handleReactivateSubscription(subscription.stripeSubscriptionId)}
                           >
@@ -217,6 +236,42 @@ export function SubscriptionsTable({ isAdmin = false }) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirm Cancel Dialog */}
+      <Dialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure you want to cancel?</DialogTitle>
+            <DialogDescription>
+              By canceling, you’ll lose access to Sublmnl’s affirmations after your current billing cycle.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setConfirmCancelOpen(false)}>Keep My Subscription</Button>
+            <Button variant="secondary" onClick={handleCancelSubscription}>
+              Yes, Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Post-Cancel Message Dialog */}
+      <Dialog open={postCancelOpen} onOpenChange={setPostCancelOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>We’re sorry to see you go!</DialogTitle>
+            <DialogDescription>
+              Your subscription has been canceled. You’ll continue to have access to Sublmnl until{" "}
+              {selectedSubscription && format(new Date(selectedSubscription.currentPeriodEnd), "MMM dd, yyyy")}.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => handleReactivateSubscription(selectedSubscription.stripeSubscriptionId)}>
+              Changed your mind? Reactivate Subscription
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

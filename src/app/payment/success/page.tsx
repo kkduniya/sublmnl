@@ -83,10 +83,10 @@ export default function PaymentSuccessPage() {
                 </div>
               )}
 
-              <div className="flex justify-between">
+              {/* <div className="flex justify-between">
                 <span className="text-gray-400">Payment ID:</span>
                 <span className="font-medium text-sm truncate">{paymentDetails.payment_intent}</span>
-              </div>
+              </div> */}
             </div>
           </div>
         ) : (
@@ -96,7 +96,7 @@ export default function PaymentSuccessPage() {
         )}
 
         <div className="flex flex-col space-y-3">
-          {paymentDetails?.mode === "subscription" ? (
+          {/* {paymentDetails?.mode === "subscription" ? (
             <Button onClick={() => router.push("/create")}>Create Your First Audio</Button>
           ) : (
             <Button onClick={() => router.push("/dashboard/audios")}>View Your Purchased Audio</Button>
@@ -104,7 +104,8 @@ export default function PaymentSuccessPage() {
 
           <Button variant="outline" onClick={() => router.push("/")}>
             Return to Home
-          </Button>
+          </Button> */}
+          <Button onClick={() => router.push("/dashboard/audios")}>Start Manifesting</Button>
         </div>
       </div>
     </div>

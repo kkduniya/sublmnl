@@ -123,6 +123,21 @@ export default function Sidebar() {
       forAdmin: true,
     },
     {
+      title: "Frequency",
+      icon: (
+         <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M3 12h2v4H3v-4zm4-6h2v16H7V6zm4 4h2v12h-2V10zm4-6h2v18h-2V4zm4 8h2v10h-2V12zm4-2h2v12h-2V10z" />
+          </svg>
+      ),
+      href: "/dashboard/frequency",
+      forAdmin: true,
+    },
+    {
       title: "Content Management",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

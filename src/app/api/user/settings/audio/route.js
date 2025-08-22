@@ -23,6 +23,7 @@ export async function GET(request) {
         settings: {
           musicVolume: 1.0,
           affirmationsVolume: 0.6,
+          frequencyVolume:0.5,
           repetitionInterval: 10,
           speed:1
         },
@@ -34,6 +35,7 @@ export async function GET(request) {
       settings: {
         musicVolume: settings.musicVolume,
         affirmationsVolume: settings.affirmationsVolume,
+        frequencyVolume: settings.frequencyVolume,
         repetitionInterval: settings.repetitionInterval,
         speed:settings.speed,
       },
@@ -58,10 +60,10 @@ export async function POST(request) {
     const userId = session.user.id
 
     // Get settings from request body
-    const { musicVolume, affirmationsVolume, repetitionInterval ,speed } = await request.json()
+    const { musicVolume, affirmationsVolume, repetitionInterval ,speed , frequencyVolume } = await request.json()
 
     // Validate settings
-    if (musicVolume === undefined || affirmationsVolume === undefined || repetitionInterval === undefined || speed === undefined) {
+    if (musicVolume === undefined || affirmationsVolume === undefined || frequencyVolume === undefined || repetitionInterval === undefined || speed === undefined) {
       return NextResponse.json({ success: false, message: "Missing required settings" }, { status: 400 })
     }
 
@@ -69,6 +71,7 @@ export async function POST(request) {
     let result = await updateUserAudioSettings(userId, {
       musicVolume: Number.parseFloat(musicVolume),
       affirmationsVolume: Number.parseFloat(affirmationsVolume),
+      frequencyVolume: Number.parseFloat(frequencyVolume),
       repetitionInterval: Number.parseInt(repetitionInterval),
       speed:Number.parseInt(speed),
     })
