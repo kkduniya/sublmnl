@@ -42,7 +42,7 @@ export function PaymentsTable({ isAdmin = false, userId }) {
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
-      payment.stripePaymentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.stripePaymentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
 
@@ -128,7 +128,7 @@ export function PaymentsTable({ isAdmin = false, userId }) {
             ) : (
               filteredPayments.map((payment) => (
                 <TableRow key={payment._id}>
-                  <TableCell className="font-mono text-sm">{payment.stripePaymentId.slice(-12)}</TableCell>
+                  <TableCell className="font-mono text-sm">{payment.stripePaymentId?.slice(-12)}</TableCell>
                   {isAdmin && (
                     <TableCell>
                       <div>
