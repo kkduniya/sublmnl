@@ -29,9 +29,9 @@ async function getAudioDuration(filePath) {
 }
 
 // GET specific frequency audio
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
-    const { id } = params
+    const { id } = await context.params   // ✅ fixed
     if (!id) {
       return NextResponse.json({ success: false, message: "Audio ID is required" }, { status: 400 })
     }
@@ -57,9 +57,9 @@ export async function GET(request, { params }) {
 }
 
 // PUT (update frequency audio)
-export async function PUT(request, { params }) {
+export async function PUT(request, context) {
   try {
-    const { id } = params
+    const { id } = await context.params   // ✅ fixed
     if (!id) {
       return NextResponse.json({ success: false, message: "Audio ID is required" }, { status: 400 })
     }
@@ -165,9 +165,9 @@ export async function PUT(request, { params }) {
 }
 
 // DELETE frequency audio
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
-    const { id } = params
+    const { id } = await context.params   // ✅ fixed
     if (!id) {
       return NextResponse.json({ success: false, message: "Audio ID is required" }, { status: 400 })
     }

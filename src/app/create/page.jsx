@@ -90,6 +90,9 @@ export default function CreatePage() {
 
   const [subscriptionStatus, setSubscriptionStatus] = useState({});
 
+  const [frequencyAudios , setFrequencyAudios] = useState([]);
+  const [isLoadingFrequencyAudios , setIsLoadingFrequencyAudios] = useState(false);
+
   // Add router and toast
   const router = useRouter();
   const { toast } = useToast();
@@ -126,6 +129,27 @@ export default function CreatePage() {
   // Dynamic gradient styles
   const heroGradient = `linear-gradient(to bottom right, ${primaryColor}20, ${secondaryColor}20, ${primaryColor}20)`;
   const primaryGradient = `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`;
+
+  // Fetch frequency Audios
+  const fetchFrequencyAudios = async () =>{
+    try {
+      setIsLoadingFrequencyAudios(true)
+      const response = await fetch("/api/admin/frequency");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch Frequency Audios");
+      }
+      const data = await response.json();
+      setFrequencyAudios(data?.audios)
+    } catch (error) {
+      console.error(error)
+      setFrequencyAudios([])
+    } finally {
+      setIsLoadingFrequencyAudios(false)
+    }
+  }
+
+  console.log(frequencyAudios)
 
   // Fetch music tracks from database
   const fetchMusicTracks = async () => {
@@ -262,6 +286,7 @@ export default function CreatePage() {
     //   }
     // }
 
+    fetchFrequencyAudios()
     fetchMusicTracks();
     fetchAudioSettings();
     const params = new URLSearchParams(window.location.search);
@@ -426,79 +451,6 @@ export default function CreatePage() {
     setCustomAffirmations([]);
     setError("");
   };
-
-  // const handleAffirmationToggle = (affirmation) => {
-  //   if (selectedAffirmations.includes(affirmation)) {
-  //     setSelectedAffirmations(
-  //       selectedAffirmations.filter((a) => a !== affirmation)
-  //     );
-  //     setCustomAffirmations(
-  //       selectedAffirmations.filter((a) => a !== affirmation)
-  //     );
-  //   } else {
-  //     setSelectedAffirmations([...selectedAffirmations, affirmation]);
-  //     setCustomAffirmations([...selectedAffirmations, affirmation]);
-  //   }
-  // };
-
-  // const handleGenerateAffirmations = async () => {
-  //   setError("");
-
-  //   if (!formData.category && !formData.customOnly) {
-  //     setError("Please select a category first");
-  //     return;
-  //   }
-
-  //   if (!formData.goal && !formData.customOnly) {
-  //     setError("Please enter your goal first");
-  //     return;
-  //   }
-
-  //   setIsGenerating(true);
-
-  //   try {
-  //     // Simulate API call to generate affirmations
-  //     initializeOpenAI();
-  //     let generatedAffirmations;
-
-  //     // Use the mock data if in development mode or testing
-  //     if (
-  //       process.env.NODE_ENV === "development" &&
-  //       process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true"
-  //     ) {
-  //       // Simulate API call to generate affirmations
-  //       await new Promise((resolve) => setTimeout(resolve, 1500));
-  //       generatedAffirmations =
-  //         categories.find((cat) => cat.id === formData.category)
-  //           ?.affirmations || [];
-  //     } else {
-  //       // Generate affirmations using OpenAI
-  //       generatedAffirmations = await generateAffirmationsWithAI(
-  //         categories.find((cat) => cat.id === formData.category)?.name ||
-  //           formData.category,
-  //         formData.goal,
-  //         6 // Number of affirmations to generate
-  //       );
-  //     }
-  //     // Mock generated affirmations based on category
-  //     let mockAffirmations = [];
-
-  //     mockAffirmations = categories.find(
-  //       (cat) => cat.id === formData.category
-  //     ).affirmations;
-  //     setGeneratedAffirmations(generatedAffirmations);
-  //     updateFormData({
-  //       affirmations: generatedAffirmations || mockAffirmations,
-  //     });
-  //     setSelectedAffirmations([...generatedAffirmations]);
-  //     setCustomAffirmations([...generatedAffirmations]);
-  //   } catch (error) {
-  //     console.error("Error generating affirmations:", error);
-  //     setError("Failed to generate affirmations. Please try again.");
-  //   } finally {
-  //     setIsGenerating(false);
-  //   }
-  // };
 
   const handleAffirmationToggle = (affirmation) => {
     const isSelected = selectedAffirmations.includes(affirmation);

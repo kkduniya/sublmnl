@@ -636,18 +636,77 @@ export default function EnhancedAudioPlayer({
           }
 
           // ---- Logged in users without subscription ----
-          if (user && (!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments)) {
-            // Stop playback and show pricing popup
+          const isUnsubscribed =
+          !user ||
+          (user && (!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments))
+
+        if (isUnsubscribed) {
+          // If already previewed once, block immediately
+          if (hasPreviewedRef.current) {
             audioRef.current.pause()
             setIsPlaying(false)
             isPlayingRef.current = false
             onPlayStateChange(false)
-            // This will trigger the pricing popup in the parent component
-            if (handlePricingForLoggedInUser) {
+            // Save pending audio info for guests
+            try {
+              if (audioUrl && affirmations && affirmations.length > 0) {
+                const data = {
+                  affirmations,
+                  musicTrack: null,
+                  voiceType: voiceSettings?.voice || "default",
+                  voiceName: voiceSettings?.voice || "default",
+                  voiceLanguage: "en-US",
+                  voicePitch: 0,
+                  voiceSpeed: 0,
+                  volume: 0.3,
+                  audioUrl,
+                  category: "General",
+                  repetitionInterval: repetitionInterval || 10,
+                }
+                localStorage.setItem("pendingAudioSave", JSON.stringify(data))
+              }
+            } catch {}
+            // setShowPreviewPopup(true)
+            // If user is logged in, trigger pricing popup
+            if (user && handlePricingForLoggedInUser) {
               handlePricingForLoggedInUser()
             }
             return
           }
+
+          // First preview attempt → allow 5s
+          previewTimeoutRef.current = setTimeout(() => {
+            audioRef.current.pause()
+            setIsPlaying(false)
+            isPlayingRef.current = false
+            onPlayStateChange(false)
+            hasPreviewedRef.current = true // 🔒 Mark as used
+            try {
+              if (audioUrl && affirmations && affirmations.length > 0) {
+                const data = {
+                  affirmations,
+                  musicTrack: null,
+                  voiceType: voiceSettings?.voice || "default",
+                  voiceName: voiceSettings?.voice || "default",
+                  voiceLanguage: "en-US",
+                  voicePitch: 0,
+                  voiceSpeed: 0,
+                  volume: 0.3,
+                  audioUrl,
+                  category: "General",
+                  repetitionInterval: repetitionInterval || 10,
+                }
+                localStorage.setItem("pendingAudioSave", JSON.stringify(data))
+              }
+            } catch {}
+            // setShowPreviewPopup(true)
+            // If user is logged in, trigger pricing as well
+            if (user && handlePricingForLoggedInUser) {
+              handlePricingForLoggedInUser()
+            }
+          }, 5000)
+          return
+        }
 
           // ---- Start affirmations for subscribed users ----
           if (affirmations.length > 0 && !disableAffirmations) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "@/components/ui/use-toast"
@@ -16,7 +16,7 @@ import { formatDuration } from "@/lib/music-tracks"
 const AREA_OPTIONS = ["Career", "Relationships", "Health", "Wealth", "Overall"]
 
 export default function EditFrequencyPage({ params }) {
-  const { id } = params
+  const { id } = use(params)
   const { user } = useAuth()
   const router = useRouter()
 
@@ -58,12 +58,13 @@ export default function EditFrequencyPage({ params }) {
         })
 
         // fetch all frequencies to check taken areas
+        // fetch all frequencies to check taken areas
         const resAll = await fetch("/api/admin/frequency")
         const dataAll = await resAll.json()
         if (dataAll.success) {
           const taken = dataAll.audios
+            .filter((f) => f._id !== id && f.area && f.area !== "none")
             .map((f) => f.area)
-            .filter((a) => a && a !== "none" && f._id !== id)
           setUsedAreas(taken)
         }
       } catch (err) {
