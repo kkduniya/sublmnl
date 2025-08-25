@@ -25,7 +25,9 @@ export async function POST(request) {
       audioUrl,
       category,
       repetitionInterval,
-      voiceName
+      voiceName,
+      frequencyUrl,
+      frequencyVolume = 0.5
     } = await request.json()
 
     // Validate inputs
@@ -86,6 +88,22 @@ export async function POST(request) {
       }
     }
 
+    // Validate frequency URL if provided
+    if (frequencyUrl && typeof frequencyUrl === "string") {
+      try {
+        new URL(frequencyUrl)
+      } catch (e) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Invalid frequency audio URL provided",
+            error: e.message,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
     // Create audio record in database
     const audioData = {
       userId: new ObjectId(session.user.id),
@@ -107,6 +125,8 @@ export async function POST(request) {
       audioUrl: audioUrl || musicTrack.audioUrl, // Use provided audioUrl or fallback to music track URL
       category: category || "General",
       repetitionInterval: repetitionInterval || 10,
+      frequencyUrl: frequencyUrl || null,
+      frequencyVolume: Number.parseFloat(frequencyVolume || 0.5),
       createdAt: new Date(),
       updatedAt: new Date(),
     }

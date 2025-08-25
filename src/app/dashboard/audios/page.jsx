@@ -31,6 +31,7 @@ export default function UserAudiosPage() {
   const [musicVolume, setMusicVolume] = useState(1.0)
   const [affirmationVolume, setAffirmationVolume] = useState(0.1)
   const [affirmationInterval, setAffirmationInterval] = useState(20)
+  const [frequencyVolume, setFrequencyVolume] = useState(0.5)
 
   const audioPlayerRef = useRef(null)
   const pendingAudioData = localStorage.getItem("pendingAudioSave")
@@ -433,6 +434,9 @@ export default function UserAudiosPage() {
         <BottomPlayer
           ref={audioPlayerRef}
           audioUrl={currentAudio.audioUrl || currentAudio.filePath}
+          frequencyUrl={currentAudio.frequencyUrl}
+          frequencyVolume={currentAudio.frequencyVolume || frequencyVolume}
+          onFrequencyVolumeChange={setFrequencyVolume}
           title={currentAudio.name}
           category={currentAudio.category || "General"}
           onNext={handleNext}

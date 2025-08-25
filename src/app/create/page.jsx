@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ChevronLeft,
@@ -59,6 +60,8 @@ export default function CreatePage() {
     affirmationsVolume: 0.2, // Default to 20%
     repetitionInterval: 10,
     speed: 1,
+    frequencyAudio:null,
+    frequencyVolume:0.5, // Default to 50%
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,6 +73,8 @@ export default function CreatePage() {
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
   const [isGeneratingFinal, setIsGeneratingFinal] = useState(false);
   const [finalAudioUrl, setFinalAudioUrl] = useState("");
+  const [finalFrequencyUrl, setFinalFrequencyUrl] = useState("");
+
   const [availableVoices, setAvailableVoices] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [musicTracks, setMusicTracks] = useState([]);
@@ -92,6 +97,7 @@ export default function CreatePage() {
 
   const [frequencyAudios , setFrequencyAudios] = useState([]);
   const [isLoadingFrequencyAudios , setIsLoadingFrequencyAudios] = useState(false);
+  const [selectedFrequencyAudio , setSelectedFrequencyAudio] = useState(null)
 
   // Add router and toast
   const router = useRouter();
@@ -119,6 +125,67 @@ export default function CreatePage() {
 
     return activePalette.colors[index];
   };
+
+  
+  const [fxCategoryId, setFxCategoryId] = useState(null);
+  
+  const triggerFx = (id) => {
+    setFxCategoryId(id);
+    // auto-clear after ~1.2s so it’s a burst, not permanent
+    setTimeout(() => setFxCategoryId(null), 1200);
+  };
+  
+ const FrequencyFX = ({ active }) => (
+    <>
+      {/* continuous breathing aura */}
+      {active && (
+        <motion.div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            boxShadow:
+              "0 0 15px rgba(228,255,168,0.4), 0 0 35px rgba(228,255,168,0.2)",
+          }}
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      )}
+
+      {/* one-time ripple pulse */}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            key="pulse"
+            className="absolute inset-0 rounded-2xl border-2 border-[#e4ffa8] pointer-events-none"
+            initial={{ scale: 0.8, opacity: 0.8 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* tiny waveform at bottom */}
+      {active && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-end gap-[3px] h-3">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="w-[3px] rounded bg-[#e4ffa8]"
+              initial={{ height: 6 }}
+              animate={{ height: [6, 14, 8][i] }}
+              transition={{
+                duration: 0.6,
+                repeat: Infinity,
+                repeatType: "mirror",
+                delay: i * 0.2,
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  )
+
 
   // Theme colors with fallbacks
   const primaryColor = getThemeColor(0, "#4169E1"); // Primary (indigo)
@@ -148,8 +215,6 @@ export default function CreatePage() {
       setIsLoadingFrequencyAudios(false)
     }
   }
-
-  console.log(frequencyAudios)
 
   // Fetch music tracks from database
   const fetchMusicTracks = async () => {
@@ -258,6 +323,7 @@ export default function CreatePage() {
             affirmationsVolume: data.settings.affirmationsVolume,
             repetitionInterval: data.settings.repetitionInterval,
             speed: data.settings.speed,
+            frequencyVolume:data.settings.frequencyVolume,
           }));
         } else {
           console.log("No user settings found, using defaults");
@@ -441,16 +507,55 @@ export default function CreatePage() {
   };
 
   const handleCategorySelect = (categoryId) => {
+    if (isLoadingFrequencyAudios) return;
+
     updateFormData({ category: categoryId });
-    let selectedCategory = categories.find((cat) => cat.id === categoryId);
+    const selectedCategory = categories.find((cat) => cat.id === categoryId);
+
     if (selectedCategory) {
       setAllCatsAffirmations(selectedCategory.affirmations);
-      // setGeneratedAffirmations(selectedCategory.affirmations)
+
+      const matchedFrequency = frequencyAudios.find(
+        (fa) => fa.area.toLowerCase() === selectedCategory.name.toLowerCase()
+      );
+
+      if (matchedFrequency) {
+        setSelectedFrequencyAudio(matchedFrequency);
+        updateFormData({
+          frequencyAudio: {
+            id: matchedFrequency._id,
+            name: matchedFrequency.audioName,
+            audioUrl: matchedFrequency.path,
+            duration: matchedFrequency.duration,
+          },
+          category: categoryId,
+        });
+
+        // 🔊 trigger “frequency blast” effect
+        triggerFx(categoryId)
+
+        // ✅ toast
+        toast({
+          title: "Frequency attached",
+          description: `Frequency added for ${selectedCategory.name}`,
+        });
+      } else {
+        setSelectedFrequencyAudio(null);
+        updateFormData({ frequencyAudio: null, category: categoryId });
+
+        // ℹ️ toast (no effect)
+        toast({
+          title: "No frequency available",
+          description: `No frequency found for ${selectedCategory.name}`,
+        });
+      }
     }
+
     setSelectedAffirmations([]);
     setCustomAffirmations([]);
     setError("");
   };
+
 
   const handleAffirmationToggle = (affirmation) => {
     const isSelected = selectedAffirmations.includes(affirmation);
@@ -625,21 +730,12 @@ export default function CreatePage() {
       audioUrl: finalAudioUrl,
       category: formData.category || "General",
       repetitionInterval: formData.repetitionInterval || 10,
+      frequencyUrl: finalFrequencyUrl || null,
+      frequencyVolume: formData.frequencyVolume || 0.5,
     };
     try {
       localStorage.setItem("pendingAudioSave", JSON.stringify(data));
     } catch {}
-  };
-
-  const openAccountPopup = () => setShowAccountPopup(true);
-
-  // Wait helper for auth context to populate user.id after login
-  const waitForUserId = async (maxMs = 4000) => {
-    const start = Date.now();
-    while (!user?.id && Date.now() - start < maxMs) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    return user?.id || null;
   };
 
   // Replace your existing save function with this updated version
@@ -668,6 +764,8 @@ export default function CreatePage() {
       audioUrl: finalAudioUrl,
       category: formData.category || "General",
       repetitionInterval: formData.repetitionInterval || 10,
+      frequencyUrl: finalFrequencyUrl || null,
+      frequencyVolume: formData.frequencyVolume || 0.5,
     };
 
     setTempAudioData(tempData);
@@ -685,6 +783,7 @@ export default function CreatePage() {
       await checkUserSubscriptionStatus(user?.id);
     }
     if (!subscriptionStatus?.hasActiveSubscription && !subscriptionStatus?.hasOneTimePayments && !subscriptionStatus?.hasPurchasedAudios && !subscriptionStatus?.hasActivePlan) {
+      persistPendingAudio();
       setShowPricingPopup(true);
       return;
     }
@@ -726,6 +825,8 @@ export default function CreatePage() {
       audioUrl: finalAudioUrl,
       category: formData.category || "General",
       repetitionInterval: formData.repetitionInterval || 10,
+      frequencyUrl: finalFrequencyUrl || null,
+      frequencyVolume: formData.frequencyVolume || 0.5,
     };
 
     setTempAudioData(tempData);
@@ -1005,6 +1106,7 @@ export default function CreatePage() {
         },
         body: JSON.stringify({
           musicTrackUrl: formData.musicTrack.audioUrl,
+          frequencyAudioUrl:formData.frequencyAudio?.audioUrl,
           affirmations: customAffirmations,
           voiceSettings: {
             voice: formData.voiceType,
@@ -1031,6 +1133,7 @@ export default function CreatePage() {
 
       // Set the final audio URL to the generated audio
       setFinalAudioUrl(data.audioUrl);
+      setFinalFrequencyUrl(data?.frequencyUrl)
       toast({
         title: "Success",
         description: "Your Sublmnl audio has been created successfully!",
@@ -1244,64 +1347,39 @@ export default function CreatePage() {
                               What area of your life do you want to improve?
                             </h2>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                              {categories.map((category) => (
-                                <button
-                                  key={category.id}
-                                  className={`glass-card p-4 flex flex-col items-center justify-center h-24 transition-colors ${
-                                    formData.category === category.id
-                                      ? "border-2 border-[#e4ffa8]  "
-                                      : "border  border-gray-700"
-                                  }`}
-                                  onClick={() =>
-                                    handleCategorySelect(category.id)
-                                  }
-                                  // style={{
-                                  //   borderColor:
-                                  //     formData.category === category.id
-                                  //       ? getThemeColor(1, "#4169E1")
-                                  //       : "rgba(55, 65, 81, 0.7)",
-                                  // }}
-                                >
-                                  <div
-                                    className={`mb-2 ${
-                                      formData.category === category.id
-                                        ? "text-[#e4ffa8]"
-                                        : "text-gray-400"
-                                    }`}
-                                    // style={{
-                                    //   color:
-                                    //     formData.category === category.id
-                                    //       ? getThemeColor(1, "#4169E1")
-                                    //       : "rgba(156, 163, 175, 1)",
-                                    // }}
+                              {categories.map((category) => {
+                                const isSelected = formData.category === category.id
+                                const showFx = fxCategoryId === category.id
+
+                                return (
+                                  <motion.button
+                                    key={category.id}
+                                    whileTap={{ scale: 0.95 }}
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 250, damping: 18 }}
+                                    className={`relative glass-card p-4 flex flex-col items-center justify-center h-24 overflow-hidden
+                                      ${isLoadingFrequencyAudios ? "cursor-wait" : "cursor-pointer"}
+                                      ${isSelected ? "border-2 border-[#e4ffa8]" : "border border-gray-700"}
+                                    `}
+                                    onClick={() => handleCategorySelect(category.id)}
                                   >
-                                    {category.image == "" ? (
-                                      category.icon
-                                    ) : (
-                                      <img
-                                        src={category.image}
-                                        alt={category.name}
-                                        className="h-12 w-12"
-                                      />
-                                    )}
-                                  </div>
-                                  <span
-                                    className={
-                                      formData.category === category.id
-                                        ? "text-[#e4ffa8]"
-                                        : "text-gray-300"
-                                    }
-                                    // style={{
-                                    //   color:
-                                    //     formData.category === category.id
-                                    //       ? getThemeColor(1, "#4169E1")
-                                    //       : "rgba(209, 213, 219, 1)",
-                                    // }}
-                                  >
-                                    {category.name}
-                                  </span>
-                                </button>
-                              ))}
+                                    <FrequencyFX active={showFx} />
+
+                                    <div className={`mb-2 ${isSelected ? "text-[#e4ffa8]" : "text-gray-400"}`}>
+                                      {category.image === "" ? (
+                                        category.icon
+                                      ) : (
+                                        <img src={category.image} alt={category.name} className="h-12 w-12" />
+                                      )}
+                                    </div>
+
+                                    <span className={isSelected ? "text-[#e4ffa8]" : "text-gray-300"}>
+                                      {category.name}
+                                    </span>
+                                  </motion.button>
+                                )
+                              })}
+
                             </div>
                           </div>
 
@@ -1469,56 +1547,38 @@ export default function CreatePage() {
                               What area of your life do you want to improve?
                             </h2>
                             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                              {categories.map((category) => (
-                                <button
-                                  key={category.id}
-                                  className={`glass-card p-4 flex flex-col items-center justify-center h-24 transition-colors ${
-                                    formData.category === category.id
-                                      ? "border-2 border-[#e4ffa8]"
-                                      : "border border-gray-700"
-                                  }`}
-                                  onClick={() =>
-                                    handleCategorySelect(category.id)
-                                  }
-                                  // style={{
-                                  //   borderColor:
-                                  //     formData.category === category.id
-                                  //       ? getThemeColor(1, "#4169E1")
-                                  //       : "rgba(55, 65, 81, 0.7)",
-                                  // }}
-                                >
-                                  <div
-                                    className={`mb-2 ${
-                                      formData.category === category.id
-                                        ? "text-[#e4ffa8]"
-                                        : "text-gray-400"
-                                    }`}
-                                    // style={{
-                                    //   color:
-                                    //     formData.category === category.id
-                                    //       ? getThemeColor(1, "#4169E1")
-                                    //       : "rgba(156, 163, 175, 1)",
-                                    // }}
+                              {categories.map((category) => {
+                                const isSelected = formData.category === category.id
+                                const showFx = fxCategoryId === category.id
+
+                                return (
+                                  <motion.button
+                                    key={category.id}
+                                    whileTap={{ scale: 0.95 }}
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 250, damping: 18 }}
+                                    className={`relative glass-card p-4 flex flex-col items-center justify-center h-24 overflow-hidden
+                                      ${isLoadingFrequencyAudios ? "cursor-wait" : "cursor-pointer"}
+                                      ${isSelected ? "border-2 border-[#e4ffa8]" : "border border-gray-700"}
+                                    `}
+                                    onClick={() => handleCategorySelect(category.id)}
                                   >
-                                    {category.icon}
-                                  </div>
-                                  <span
-                                    className={
-                                      formData.category === category.id
-                                        ? "text-[#e4ffa8]"
-                                        : "text-gray-300"
-                                    }
-                                    // style={{
-                                    //   color:
-                                    //     formData.category === category.id
-                                    //       ? getThemeColor(1, "#4169E1")
-                                    //       : "rgba(209, 213, 219, 1)",
-                                    // }}
-                                  >
-                                    {category.name}
-                                  </span>
-                                </button>
-                              ))}
+                                    <FrequencyFX active={showFx} />
+
+                                    <div className={`mb-2 ${isSelected ? "text-[#e4ffa8]" : "text-gray-400"}`}>
+                                      {category.image === "" ? (
+                                        category.icon
+                                      ) : (
+                                        <img src={category.image} alt={category.name} className="h-12 w-12" />
+                                      )}
+                                    </div>
+
+                                    <span className={isSelected ? "text-[#e4ffa8]" : "text-gray-300"}>
+                                      {category.name}
+                                    </span>
+                                  </motion.button>
+                                )
+                              })}
                             </div>
 
                             <div className="space-y-4 my-6">
@@ -2007,6 +2067,11 @@ export default function CreatePage() {
 
                           <EnhancedAudioPlayer
                             audioUrl={finalAudioUrl}
+                            frequencyUrl={finalFrequencyUrl}
+                            frequencyVolume={formData.frequencyVolume}
+                            onFrequencyVolumeChange={(vol) =>
+                              updateFormData({ frequencyVolume: vol })
+                            }
                             affirmations={currentAffirmations}
                             voiceSettings={voiceSettings}
                             affirmationsVolume={formData.affirmationsVolume}

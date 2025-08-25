@@ -124,6 +124,144 @@ export function stopSpeech() {
   
     return utterance
   }
+
+  /**
+   * Prepares frequency audio element for synchronized playback
+   * @param {HTMLAudioElement} frequencyAudioElement - The frequency audio element
+   * @param {number} volume - Volume level (0-1)
+   * @param {boolean} isMuted - Whether audio is muted
+   * @returns {Promise} - A promise that resolves when frequency audio is ready
+   */
+  export function prepareFrequencyAudio(frequencyAudioElement, volume = 0.5, isMuted = false) {
+    return new Promise((resolve, reject) => {
+      if (!frequencyAudioElement) {
+        reject(new Error("No frequency audio element provided"))
+        return
+      }
+
+      // Set audio properties
+      frequencyAudioElement.loop = true
+      frequencyAudioElement.volume = isMuted ? 0 : volume
+
+      // If the audio is already loaded and ready
+      if (frequencyAudioElement.readyState >= 3) {
+        resolve(frequencyAudioElement)
+        return
+      }
+
+      // Set up event listeners for loading
+      const loadHandler = () => {
+        frequencyAudioElement.removeEventListener("canplay", loadHandler)
+        frequencyAudioElement.removeEventListener("error", errorHandler)
+        resolve(frequencyAudioElement)
+      }
+
+      const errorHandler = (error) => {
+        frequencyAudioElement.removeEventListener("canplay", loadHandler)
+        frequencyAudioElement.removeEventListener("error", errorHandler)
+        reject(error)
+      }
+
+      frequencyAudioElement.addEventListener("canplay", loadHandler)
+      frequencyAudioElement.addEventListener("error", errorHandler)
+
+      // Try to load if not already loading
+      if (frequencyAudioElement.readyState === 0) {
+        frequencyAudioElement.load()
+      }
+    })
+  }
+
+  /**
+   * Synchronizes frequency audio with main audio playback
+   * @param {HTMLAudioElement} mainAudio - Main audio element
+   * @param {HTMLAudioElement} frequencyAudio - Frequency audio element
+   * @param {number} frequencyVolume - Frequency audio volume (0-1)
+   * @param {boolean} isMuted - Whether audio is muted
+   */
+  export function syncFrequencyAudio(mainAudio, frequencyAudio, frequencyVolume = 0.5, isMuted = false) {
+    if (!mainAudio || !frequencyAudio) return
+
+    // Set frequency audio volume
+    frequencyAudio.volume = isMuted ? 0 : frequencyVolume
+
+    // Sync playback state
+    if (!mainAudio.paused && mainAudio.currentTime > 0) {
+      // Main audio is playing, start frequency audio
+      if (frequencyAudio.paused) {
+        frequencyAudio.play().catch(error => {
+          console.warn("Failed to sync frequency audio:", error)
+        })
+      }
+    } else {
+      // Main audio is paused, pause frequency audio
+      if (!frequencyAudio.paused) {
+        frequencyAudio.pause()
+      }
+    }
+  }
+
+  /**
+   * Updates localStorage pendingAudioSave with frequency audio data
+   * @param {Object} existingData - Existing pendingAudioSave data
+   * @param {string} frequencyUrl - Frequency audio URL
+   * @param {number} frequencyVolume - Frequency audio volume
+   * @returns {Object} - Updated data object
+   */
+  export function updatePendingAudioSaveWithFrequency(existingData, frequencyUrl, frequencyVolume) {
+    if (!existingData || typeof existingData !== 'object') {
+      return existingData
+    }
+
+    return {
+      ...existingData,
+      frequencyUrl: frequencyUrl || null,
+      frequencyVolume: frequencyVolume || 0.5
+    }
+  }
+
+  /**
+   * Saves audio data with frequency information to localStorage
+   * @param {Object} audioData - Audio data to save
+   */
+  export function savePendingAudioWithFrequency(audioData) {
+    if (typeof window === "undefined" || !audioData) return
+
+    try {
+      const dataToSave = {
+        ...audioData,
+        frequencyUrl: audioData.frequencyUrl || null,
+        frequencyVolume: audioData.frequencyVolume || 0.5,
+        timestamp: Date.now()
+      }
+      localStorage.setItem("pendingAudioSave", JSON.stringify(dataToSave))
+    } catch (error) {
+      console.error("Failed to save pending audio data:", error)
+    }
+  }
+
+  /**
+   * Retrieves pending audio data with frequency information from localStorage
+   * @returns {Object|null} - Pending audio data or null if not found
+   */
+  export function getPendingAudioWithFrequency() {
+    if (typeof window === "undefined") return null
+
+    try {
+      const data = localStorage.getItem("pendingAudioSave")
+      if (!data) return null
+
+      const parsedData = JSON.parse(data)
+      return {
+        ...parsedData,
+        frequencyUrl: parsedData.frequencyUrl || null,
+        frequencyVolume: parsedData.frequencyVolume || 0.5
+      }
+    } catch (error) {
+      console.error("Failed to retrieve pending audio data:", error)
+      return null
+    }
+  }
   
   /**
    * Speaks the given text with the specified settings

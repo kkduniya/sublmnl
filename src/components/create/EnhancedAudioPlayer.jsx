@@ -8,11 +8,14 @@ import PreviewPopup from "./PreviewPopup"
 
 export default function EnhancedAudioPlayer({
   audioUrl,
+  frequencyUrl,
+  frequencyVolume = 0.5,
+  onFrequencyVolumeChange,
   affirmations = [],
   voiceSettings = null,
   affirmationsVolume = 0.2, // Default to 20%
   onAffirmationsVolumeChange = () => {},
-  musicVolume = 1.0,
+  musicVolume = 0,
   onMusicVolumeChange,
   repetitionInterval = 10,
   onRepetitionIntervalChange = () => {},
@@ -45,6 +48,7 @@ export default function EnhancedAudioPlayer({
   const [isSeeking, setIsSeeking] = useState(false) // Track if user is seeking
 
   const audioRef = useRef(null)
+  const frequencyAudioRef = useRef(null) // Add frequency audio ref
   const progressBarRef = useRef(null)
   const speechSynthesisRef = useRef(null)
   const utteranceRef = useRef(null)
@@ -56,6 +60,7 @@ export default function EnhancedAudioPlayer({
   const isPlayingRef = useRef(false)
   const playAffirmationsRef = useRef(false) // Track if affirmations should play
   const audioUrlRef = useRef(audioUrl) // Track the current audio URL
+  const frequencyUrlRef = useRef(frequencyUrl) // Track the current frequency URL
   const availableVoicesRef = useRef([])
   const [audioError, setAudioError] = useState(null)
   const seekingRef = useRef(false) // Reference to track seeking state
@@ -72,8 +77,9 @@ export default function EnhancedAudioPlayer({
   useEffect(() => {
     playAffirmationsRef.current = !disableAffirmations
     audioUrlRef.current = audioUrl
+    frequencyUrlRef.current = frequencyUrl
 
-  }, [disableAffirmations, audioUrl])
+  }, [disableAffirmations, audioUrl, frequencyUrl])
 
   // Add this function near the top of your component
   const isSpeechSynthesisSupported = () => {
@@ -129,6 +135,12 @@ export default function EnhancedAudioPlayer({
       // Stop any ongoing speech synthesis
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel()
+      }
+
+      // Stop frequency audio when main audio ends
+      if (frequencyAudioRef.current) {
+        frequencyAudioRef.current.pause()
+        frequencyAudioRef.current.currentTime = 0
       }
 
       // Clear all timers
@@ -208,6 +220,54 @@ export default function EnhancedAudioPlayer({
       }
     }
   }, [audioUrl, autoPlay, onError, onPlayStateChange, volume, isMuted])
+
+  // Initialize frequency audio element
+  useEffect(() => {
+    if (!frequencyUrl) {
+      // Clean up previous frequency audio if it exists
+      if (frequencyAudioRef.current) {
+        frequencyAudioRef.current.pause()
+        frequencyAudioRef.current.src = ""
+        frequencyAudioRef.current = null
+      }
+      return
+    }
+
+    // Clean up previous frequency audio element if it exists
+    if (frequencyAudioRef.current) {
+      frequencyAudioRef.current.pause()
+      frequencyAudioRef.current.src = ""
+    }
+
+    const frequencyAudio = new Audio(frequencyUrl)
+    frequencyAudioRef.current = frequencyAudio
+
+    const handleFrequencyAudioError = (e) => {
+      console.error("Frequency audio error:", e, frequencyAudio.error)
+      // Don't set main error state for frequency audio, just log it
+    }
+
+    // Event listeners
+    frequencyAudio.addEventListener("error", handleFrequencyAudioError)
+
+    // Set volume (remove loop to prevent continuous playback after main audio ends)
+    frequencyAudio.volume = frequencyVolume
+    frequencyAudio.muted = isMuted
+
+    // Try to load the frequency audio
+    try {
+      frequencyAudio.load()
+    } catch (err) {
+      console.error("Error loading frequency audio:", err)
+    }
+
+    // Clean up
+    return () => {
+      frequencyAudio.removeEventListener("error", handleFrequencyAudioError)
+      frequencyAudio.pause()
+      frequencyAudio.src = ""
+    }
+  }, [frequencyUrl, frequencyVolume, isMuted])
 
   // Add this useEffect after the other useEffects
   useEffect(() => {
@@ -326,6 +386,12 @@ export default function EnhancedAudioPlayer({
       audioRef.current.currentTime = 0
     }
 
+    // Stop frequency audio
+    if (frequencyAudioRef.current) {
+      frequencyAudioRef.current.pause()
+      frequencyAudioRef.current.currentTime = 0
+    }
+
     // Stop speech synthesis
     if (speechSynthesisRef.current) {
       speechSynthesisRef.current.cancel()
@@ -354,6 +420,16 @@ export default function EnhancedAudioPlayer({
         .then(() => {
           setIsPlaying(true)
           onPlayStateChange(true)
+          
+          // Start frequency audio if available
+          if (frequencyAudioRef.current) {
+            frequencyAudioRef.current.volume = frequencyVolume
+            frequencyAudioRef.current.muted = isMuted
+            frequencyAudioRef.current.play().catch((err) => {
+              console.error("Frequency audio play error:", err)
+            })
+          }
+          
           // Start affirmations if we have them and they're not disabled
           if (affirmations.length > 0 && !disableAffirmations) {
             startAffirmations()
@@ -535,6 +611,11 @@ export default function EnhancedAudioPlayer({
     if (isPlaying) {
       audioRef.current.pause()
 
+      // Pause frequency audio
+      if (frequencyAudioRef.current) {
+        frequencyAudioRef.current.pause()
+      }
+
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel()
       }
@@ -574,11 +655,24 @@ export default function EnhancedAudioPlayer({
           isPlayingRef.current = true
           onPlayStateChange(true)
 
+          // Start frequency audio if available
+          if (frequencyAudioRef.current) {
+            frequencyAudioRef.current.volume = frequencyVolume
+            frequencyAudioRef.current.muted = isMuted
+            frequencyAudioRef.current.play().catch((err) => {
+              console.error("Frequency audio play error:", err)
+            })
+          }
+
           // ---- Guest users only ----
           if (!user) {
             // If already previewed once, block immediately
             if (hasPreviewedRef.current) {
               audioRef.current.pause()
+              // Pause frequency audio
+              if (frequencyAudioRef.current) {
+                frequencyAudioRef.current.pause()
+              }
               setIsPlaying(false)
               isPlayingRef.current = false
               onPlayStateChange(false)
@@ -608,6 +702,10 @@ export default function EnhancedAudioPlayer({
             // First preview → allow 5s
             previewTimeoutRef.current = setTimeout(() => {
               audioRef.current.pause()
+              // Pause frequency audio
+              if (frequencyAudioRef.current) {
+                frequencyAudioRef.current.pause()
+              }
               setIsPlaying(false)
               isPlayingRef.current = false
               onPlayStateChange(false)
@@ -644,6 +742,10 @@ export default function EnhancedAudioPlayer({
           // If already previewed once, block immediately
           if (hasPreviewedRef.current) {
             audioRef.current.pause()
+            // Pause frequency audio
+            if (frequencyAudioRef.current) {
+              frequencyAudioRef.current.pause()
+            }
             setIsPlaying(false)
             isPlayingRef.current = false
             onPlayStateChange(false)
@@ -677,6 +779,10 @@ export default function EnhancedAudioPlayer({
           // First preview attempt → allow 5s
           previewTimeoutRef.current = setTimeout(() => {
             audioRef.current.pause()
+            // Pause frequency audio
+            if (frequencyAudioRef.current) {
+              frequencyAudioRef.current.pause()
+            }
             setIsPlaying(false)
             isPlayingRef.current = false
             onPlayStateChange(false)
@@ -776,6 +882,16 @@ export default function EnhancedAudioPlayer({
     audioRef.current.currentTime = seekTime
     setCurrentTime(seekTime)
 
+    // Sync frequency audio position when seeking
+    if (frequencyAudioRef.current) {
+      // Calculate frequency audio position based on main audio position
+      // If frequency audio is shorter, use modulo to loop within its duration
+      if (frequencyAudioRef.current.duration > 0) {
+        const frequencyPosition = seekTime % frequencyAudioRef.current.duration
+        frequencyAudioRef.current.currentTime = frequencyPosition
+      }
+    }
+
     // If we're playing and have affirmations, we need to restart them
     if (isPlaying && affirmations.length > 0 && !disableAffirmations) {
       // Cancel any current speech
@@ -859,6 +975,18 @@ export default function EnhancedAudioPlayer({
           startAffirmations()
         }, 1000)
       }
+    }
+  }
+
+  const handleFrequencyVolumeChange = (e) => {
+    const newVolume = Number.parseFloat(e.target.value)
+    if (onFrequencyVolumeChange) {
+      onFrequencyVolumeChange(newVolume)
+    }
+    
+    // Update frequency audio volume immediately
+    if (frequencyAudioRef.current) {
+      frequencyAudioRef.current.volume = newVolume
     }
   }
 
@@ -947,6 +1075,16 @@ export default function EnhancedAudioPlayer({
     const seekTime = (e.nativeEvent.offsetX / e.target.clientWidth) * duration
     audioRef.current.currentTime = seekTime
     setCurrentTime(seekTime)
+
+    // Sync frequency audio position when seeking
+    if (frequencyAudioRef.current) {
+      // Calculate frequency audio position based on main audio position
+      // If frequency audio is shorter, use modulo to loop within its duration
+      if (frequencyAudioRef.current.duration > 0) {
+        const frequencyPosition = seekTime % frequencyAudioRef.current.duration
+        frequencyAudioRef.current.currentTime = frequencyPosition
+      }
+    }
 
     // If we're playing and have affirmations, we need to restart them
     if (isPlaying && affirmations.length > 0 && !disableAffirmations) {
@@ -1373,6 +1511,45 @@ export default function EnhancedAudioPlayer({
                 />
               </div>
               <div className="text-sm text-gray-400 flex-shrink-0 w-28 text-right">Affirmations Volume</div>
+            </div>
+          )}
+
+          {/* Frequency volume control - only show if frequency audio exists */}
+          {showControls && !hideVolumeControls && frequencyUrl && (
+            <div className="flex items-center space-x-3 mt-2">
+              <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 18V5l12-2v13" />
+                  <path d="m9 9 12-2" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              </div>
+              <div className="flex-grow">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={frequencyVolume}
+                  onChange={handleFrequencyVolumeChange}
+                  className="w-full h-2 bg-gray-700 rounded-full appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #22c55e ${frequencyVolume * 100}%, #374151 ${frequencyVolume * 100}%)`,
+                  }}
+                  aria-label="Frequency volume"
+                />
+              </div>
+              <div className="text-sm text-gray-400 flex-shrink-0 w-28 text-right">Frequency Volume</div>
             </div>
           )}
 

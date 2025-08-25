@@ -41,6 +41,8 @@ export async function GET(request) {
       volume: audio.volume,
       audioUrl: audio.audioUrl,
       repetitionInterval: audio.repetitionInterval,
+      frequencyUrl: audio.frequencyUrl || null,
+      frequencyVolume: audio.frequencyVolume || 0.5,
       createdAt: audio.createdAt,
       updatedAt: audio.updatedAt,
     }))

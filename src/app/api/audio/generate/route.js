@@ -18,7 +18,7 @@ export async function POST(request) {
 
     // Parse request body
     const body = await request.json()
-    const { musicTrackUrl, affirmations, voiceSettings } = body
+    const { musicTrackUrl , frequencyAudioUrl , affirmations, voiceSettings } = body
 
     // Validate inputs
     if (!affirmations || !Array.isArray(affirmations) || affirmations.length === 0) {
@@ -29,8 +29,13 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "Missing music track URL" }, { status: 400 })
     }
 
+    if (!frequencyAudioUrl) {
+      return NextResponse.json({ success: false, message: "Missing music track URL" }, { status: 400 })
+    }
+
     // Validate musicTrackUrl (basic validation)
     let validatedUrl
+    let validatedFrequencyUrl
     try {
       // Fix relative URLs by prepending the host
       if (musicTrackUrl.startsWith("/")) {
@@ -38,9 +43,11 @@ export async function POST(request) {
         const host = request.headers.get("host") || "localhost:3000"
         const protocol = host.includes("localhost") ? "http" : "https"
         validatedUrl = `${protocol}://${host}${musicTrackUrl}`
+        validatedFrequencyUrl = `${protocol}://${host}${frequencyAudioUrl}`
       } else {
         // For absolute URLs, just validate them
         validatedUrl = new URL(musicTrackUrl).toString()
+        validatedFrequencyUrl = new URL(frequencyAudioUrl).toString()
       }
     } catch (error) {
       console.error("URL validation error:", error)
@@ -82,6 +89,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       audioUrl: publicUrl,
+      frequencyUrl : validatedFrequencyUrl,
       message: "Audio generation simulated successfully",
     })
   } catch (error) {

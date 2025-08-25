@@ -12,6 +12,9 @@ const BottomPlayer = forwardRef(
   (
     {
       audioUrl,
+      frequencyUrl,
+      frequencyVolume = 0.5,
+      onFrequencyVolumeChange,
       title,
       category = "General",
       onNext,
@@ -52,6 +55,7 @@ const BottomPlayer = forwardRef(
     const [availableVoices, setAvailableVoices] = useState([])
 
     const audioRef = useRef(null)
+    const frequencyAudioRef = useRef(null)
     const speechSynthesisRef = useRef(null)
     const affirmationTimerRef = useRef(null)
     const affirmationTimeoutRef = useRef(null)
@@ -140,12 +144,24 @@ const BottomPlayer = forwardRef(
             console.error("Error playing audio:", error)
           })
 
+          // Start frequency audio if available
+          if (frequencyAudioRef.current && frequencyUrl) {
+            frequencyAudioRef.current.play().catch((error) => {
+              console.error("Error playing frequency audio:", error)
+            })
+          }
+
           // Start affirmations if we have them
           if (affirmations.length > 0) {
             startAffirmations()
           }
         } else {
           audioRef.current.pause()
+
+          // Pause frequency audio
+          if (frequencyAudioRef.current) {
+            frequencyAudioRef.current.pause()
+          }
 
           // Stop any ongoing speech
           if (speechSynthesisRef.current) {
@@ -162,7 +178,7 @@ const BottomPlayer = forwardRef(
           }
         }
       }
-    }, [isPlaying, audioUrl, affirmations])
+    }, [isPlaying, audioUrl, affirmations, frequencyUrl])
 
     // Reset audio when URL changes
     useEffect(() => {
@@ -176,7 +192,18 @@ const BottomPlayer = forwardRef(
           })
         }
       }
-    }, [audioUrl])
+
+      // Reset frequency audio when URL changes
+      if (frequencyAudioRef.current) {
+        frequencyAudioRef.current.currentTime = 0
+
+        if (isPlaying && frequencyUrl) {
+          frequencyAudioRef.current.play().catch((error) => {
+            console.error("Error playing frequency audio:", error)
+          })
+        }
+      }
+    }, [audioUrl, frequencyUrl, isPlaying])
 
     // Initialize audio
     useEffect(() => {
@@ -199,6 +226,12 @@ const BottomPlayer = forwardRef(
           speechSynthesisRef.current.cancel()
         }
 
+        // Stop frequency audio
+        if (frequencyAudioRef.current) {
+          frequencyAudioRef.current.pause()
+          frequencyAudioRef.current.currentTime = 0
+        }
+
         // Clear any timers
         if (affirmationTimerRef.current) {
           clearTimeout(affirmationTimerRef.current)
@@ -215,6 +248,14 @@ const BottomPlayer = forwardRef(
           audio.play().catch((error) => {
             console.error("Error replaying audio:", error)
           })
+
+          // Restart frequency audio if available
+          if (frequencyAudioRef.current && frequencyUrl) {
+            frequencyAudioRef.current.currentTime = 0
+            frequencyAudioRef.current.play().catch((error) => {
+              console.error("Error playing frequency audio:", error)
+            })
+          }
 
           // Restart affirmations
           if (affirmations.length > 0) {
@@ -242,6 +283,25 @@ const BottomPlayer = forwardRef(
         audio.removeEventListener("ended", handleEnd)
       }
     }, [audioUrl, onNext, isRepeat, onPlayPause, musicVolume, affirmations])
+
+    // Initialize frequency audio
+    useEffect(() => {
+      if (!frequencyUrl) return
+
+      const frequencyAudio = new Audio(frequencyUrl)
+      frequencyAudioRef.current = frequencyAudio
+
+      // Set initial volume
+      frequencyAudio.volume = frequencyVolume
+
+      // Cleanup
+      return () => {
+        if (frequencyAudioRef.current) {
+          frequencyAudioRef.current.pause()
+          frequencyAudioRef.current = null
+        }
+      }
+    }, [frequencyUrl, frequencyVolume])
 
     // Function to start affirmations
     const startAffirmations = () => {
@@ -358,6 +418,12 @@ const BottomPlayer = forwardRef(
         audioRef.current.currentTime = seekTime
       }
 
+      // Sync frequency audio position
+      if (frequencyAudioRef.current && frequencyUrl) {
+        const frequencyDuration = frequencyAudioRef.current.duration || 1
+        frequencyAudioRef.current.currentTime = seekTime % frequencyDuration
+      }
+
       // If we're playing and have affirmations, we need to restart them
       if (isPlaying && affirmations.length > 0) {
         // Cancel any current speech
@@ -399,6 +465,19 @@ const BottomPlayer = forwardRef(
 
       if (onMusicVolumeChange) {
         onMusicVolumeChange(newVolume)
+      }
+    }
+
+    // Handle frequency volume change
+    const handleFrequencyVolumeChange = (value) => {
+      const newVolume = value[0]
+
+      if (frequencyAudioRef.current) {
+        frequencyAudioRef.current.volume = newVolume
+      }
+
+      if (onFrequencyVolumeChange) {
+        onFrequencyVolumeChange(newVolume)
       }
     }
 
@@ -594,6 +673,23 @@ const BottomPlayer = forwardRef(
                         aria-label="Music Volume"
                       />
                     </div>
+
+                    {frequencyUrl && (
+                      <div className="mb-3">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-400">Frequency Volume</span>
+                          <span className="text-xs text-gray-400">{Math.round(frequencyVolume * 100)}%</span>
+                        </div>
+                        <Slider
+                          value={[frequencyVolume]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={handleFrequencyVolumeChange}
+                          aria-label="Frequency Volume"
+                        />
+                      </div>
+                    )}
 
                     {affirmations && affirmations.length > 0 && (
                       <div className="mb-3">
