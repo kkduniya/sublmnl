@@ -303,23 +303,28 @@ const BottomPlayer = forwardRef(
       }
     }, [frequencyUrl, frequencyVolume])
 
+    useEffect(() => {
+      if (isPlaying && affirmations.length > 0 && availableVoices.length > 0) {
+        startAffirmations()
+      }
+    }, [availableVoices])
+
     // Function to start affirmations
     const startAffirmations = () => {
       if (!speechSynthesisRef.current || !affirmations.length) return
 
-      // Cancel any ongoing speech first
+      // 🚨 Prevent starting before voices are loaded
+      if (!availableVoices.length) {
+        console.warn("Voices not yet loaded, retrying...")
+        setTimeout(startAffirmations, 300) // retry after a short delay
+        return
+      }
+
       speechSynthesisRef.current.cancel()
 
-      // Clear any existing timer
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
+      if (affirmationTimerRef.current) clearTimeout(affirmationTimerRef.current)
+      if (affirmationTimeoutRef.current) clearTimeout(affirmationTimeoutRef.current)
 
-      if (affirmationTimeoutRef.current) {
-        clearTimeout(affirmationTimeoutRef.current)
-      }
-
-      // Start with the first affirmation
       setCurrentAffirmationIndex(0)
       speakAffirmation(affirmations[0], 0)
     }

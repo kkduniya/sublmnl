@@ -15,7 +15,7 @@ export default function EnhancedAudioPlayer({
   voiceSettings = null,
   affirmationsVolume = 0.2, // Default to 20%
   onAffirmationsVolumeChange = () => {},
-  musicVolume = 0,
+  musicVolume = 1.0,
   onMusicVolumeChange,
   repetitionInterval = 10,
   onRepetitionIntervalChange = () => {},

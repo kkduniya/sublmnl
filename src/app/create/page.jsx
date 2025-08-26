@@ -128,6 +128,7 @@ export default function CreatePage() {
 
   
   const [fxCategoryId, setFxCategoryId] = useState(null);
+  const [justAddedCategoryId, setJustAddedCategoryId] = useState(null);
   
   const triggerFx = (id) => {
     setFxCategoryId(id);
@@ -532,18 +533,17 @@ export default function CreatePage() {
         });
 
         // 🔊 trigger “frequency blast” effect
-        triggerFx(categoryId)
+        triggerFx(categoryId);
 
-        // ✅ toast
-        toast({
-          title: "Frequency attached",
-          description: `Frequency added for ${selectedCategory.name}`,
-        });
+        // ⏳ after effect is done (1.2s), show "Frequency added" text for 2s
+        setTimeout(() => {
+          setJustAddedCategoryId(categoryId);
+          setTimeout(() => setJustAddedCategoryId(null), 2000);
+        }, 1200);
       } else {
         setSelectedFrequencyAudio(null);
         updateFormData({ frequencyAudio: null, category: categoryId });
 
-        // ℹ️ toast (no effect)
         toast({
           title: "No frequency available",
           description: `No frequency found for ${selectedCategory.name}`,
@@ -555,7 +555,6 @@ export default function CreatePage() {
     setCustomAffirmations([]);
     setError("");
   };
-
 
   const handleAffirmationToggle = (affirmation) => {
     const isSelected = selectedAffirmations.includes(affirmation);
@@ -1377,6 +1376,16 @@ export default function CreatePage() {
                                     <span className={isSelected ? "text-[#e4ffa8]" : "text-gray-300"}>
                                       {category.name}
                                     </span>
+                                    {justAddedCategoryId === category.id && (
+                                      <motion.span
+                                        initial={{ opacity: 0, y: 4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="text-xs text-[#e4ffa8] mt-1"
+                                      >
+                                        Frequency added
+                                      </motion.span>
+                                    )}
                                   </motion.button>
                                 )
                               })}
@@ -1578,6 +1587,16 @@ export default function CreatePage() {
                                     <span className={isSelected ? "text-[#e4ffa8]" : "text-gray-300"}>
                                       {category.name}
                                     </span>
+                                    {justAddedCategoryId === category.id && (
+                                      <motion.span
+                                        initial={{ opacity: 0, y: 4 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="text-xs text-[#e4ffa8] mt-1"
+                                      >
+                                        Frequency added
+                                      </motion.span>
+                                    )}
                                   </motion.button>
                                 )
                               })}
