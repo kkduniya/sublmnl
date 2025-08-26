@@ -664,6 +664,12 @@ export default function EnhancedAudioPlayer({
             })
           }
 
+          if (affirmations.length > 0 && !disableAffirmations) {
+            setTimeout(() => {
+              startAffirmations()
+            }, 1000)
+          }
+
           // ---- Guest users only ----
           if (!user) {
             // If already previewed once, block immediately
@@ -815,11 +821,7 @@ export default function EnhancedAudioPlayer({
         }
 
           // ---- Start affirmations for subscribed users ----
-          if (affirmations.length > 0 && !disableAffirmations) {
-            setTimeout(() => {
-              startAffirmations()
-            }, 1000)
-          }
+          
         })
         .catch((err) => {
           console.error("Play error:", err)
