@@ -1362,6 +1362,7 @@ export default function CreatePage() {
                                       ${isSelected ? "border-2 border-[#e4ffa8]" : "border border-gray-700"}
                                     `}
                                     onClick={() => handleCategorySelect(category.id)}
+                                    title={isLoadingFrequencyAudios ? "loading...." : ""}
                                   >
                                     <FrequencyFX active={showFx} />
 
@@ -1562,6 +1563,7 @@ export default function CreatePage() {
                                       ${isSelected ? "border-2 border-[#e4ffa8]" : "border border-gray-700"}
                                     `}
                                     onClick={() => handleCategorySelect(category.id)}
+                                    title={isLoadingFrequencyAudios ? "loading...." : ""}
                                   >
                                     <FrequencyFX active={showFx} />
 
