@@ -84,6 +84,7 @@ export default function CreatePage() {
   const [processedAudioUrl, setProcessedAudioUrl] = useState(""); // Store the processed audio URL
   const [selectedAffirmations, setSelectedAffirmations] = useState([]);
   const [allCatsAffirmations, setAllCatsAffirmations] = useState([]);
+  const [description , setDescription] = useState("")
 
   const [editAffirmation, setEditAffirmation] = useState("");
   const [editIndex, setEditIndex] = useState(null);
@@ -133,7 +134,7 @@ export default function CreatePage() {
   const triggerFx = (id) => {
     setFxCategoryId(id);
     // auto-clear after ~1.2s so it’s a burst, not permanent
-    setTimeout(() => setFxCategoryId(null), 1200);
+    setTimeout(() => setFxCategoryId(null), 1000);
   };
   
  const FrequencyFX = ({ active }) => (
@@ -521,6 +522,7 @@ export default function CreatePage() {
       );
 
       if (matchedFrequency) {
+        setDescription("")
         setSelectedFrequencyAudio(matchedFrequency);
         updateFormData({
           frequencyAudio: {
@@ -530,19 +532,22 @@ export default function CreatePage() {
             duration: matchedFrequency.duration,
           },
           category: categoryId,
-        });
-
+        });        
         // 🔊 trigger “frequency blast” effect
         triggerFx(categoryId);
 
         // ⏳ after effect is done (1.2s), show "Frequency added" text for 2s
         setTimeout(() => {
           setJustAddedCategoryId(categoryId);
-          setTimeout(() => setJustAddedCategoryId(null), 2000);
-        }, 1200);
+          setTimeout(() =>{ 
+            setJustAddedCategoryId(null);
+          }, 2000);
+          setDescription(matchedFrequency?.description)
+        }, 1000);
       } else {
         setSelectedFrequencyAudio(null);
         updateFormData({ frequencyAudio: null, category: categoryId });
+        setDescription("")
 
         toast({
           title: "No frequency available",
@@ -1389,8 +1394,11 @@ export default function CreatePage() {
                                   </motion.button>
                                 )
                               })}
-
                             </div>
+                            {
+                              description && 
+                              <p className="p-2">{description}</p>
+                            }
                           </div>
 
                           <div>
@@ -1601,7 +1609,10 @@ export default function CreatePage() {
                                 )
                               })}
                             </div>
-
+                            {
+                              description && 
+                              <p className="p-2">{description}</p>
+                            }
                             <div className="space-y-4 my-6">
                               <span
                                 className="flex items-center text-2xl font-bold bg-gradient-to-r from-[#e4ffa8] to-[#b1d239] bg-clip-text text-transparent"

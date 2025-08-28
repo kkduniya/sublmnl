@@ -27,6 +27,7 @@ export default function NewFrequencyPage() {
   const [formData, setFormData] = useState({
     name: "",
     area: "none", // default None
+    description: "",
   })
   const [file, setFile] = useState(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -113,6 +114,7 @@ export default function NewFrequencyPage() {
       const formDataToSend = new FormData()
       formDataToSend.append("name", formData.name)
       formDataToSend.append("area", formData.area)
+      formDataToSend.append("description", formData.description)
       formDataToSend.append("file", file)
 
       const response = await fetch("/api/admin/frequency", {
@@ -210,6 +212,17 @@ export default function NewFrequencyPage() {
                   You can assign only one audio per area. "None" means no area
                   restriction.
                 </p>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter frequency description (optional)"
+                />
               </div>
 
               <div>

@@ -74,7 +74,7 @@ export default function Navbar() {
               className="rounded-full"
             >
               <Image
-                  src={"/images/logowhite.png"}
+                  src={"/images/logowhiteNew.png"}
                   alt="Logo"
                   width={120}
                   height={20}

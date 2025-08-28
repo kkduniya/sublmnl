@@ -243,7 +243,7 @@ export default function Sidebar() {
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
         {!isCollapsed && <div className="text-xl font-bold text-primary">
           <Image
-            src={"/images/logowhite.png"}
+            src={"/images/logowhiteNew.png"}
             alt="Logo"
             width={120}
             height={20}

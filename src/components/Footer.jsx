@@ -37,7 +37,7 @@ export default function Footer() {
                 className="rounded-full flex items-center justify-between"
               >
                 <Image
-                  src={"/images/logowhite.png"}
+                  src={"/images/logowhiteNew.png"}
                   alt="Logo"
                   width={120}
                   height={20}

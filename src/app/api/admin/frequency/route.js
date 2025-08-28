@@ -66,6 +66,7 @@ export async function POST(request) {
     // accept either "audioName" or "name"
     const audioName = formData.get("audioName") || formData.get("name")
     let area = formData.get("area") // Can be "None" or one of the 5
+    const description = formData.get("description") || ""
     const file = formData.get("file")
 
     if (!audioName || !file) {
@@ -131,6 +132,7 @@ export async function POST(request) {
     const newAudio = {
       audioName,
       area, // null if None
+      description,
       path: publicPath,
       duration,
       isActive: true,

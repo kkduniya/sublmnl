@@ -822,7 +822,7 @@ export default function Home() {
             >
               <div className="relative w-full h-full overflow-hidden rounded-md md:rounded-l-3xl md:rounded-r-none">
                 <iframe
-                  src="https://player.vimeo.com/video/1090773087?badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;loop=1&amp;controls=0&amp;muted=1"
+                  src="https://player.vimeo.com/video/1113245010?title=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;loop=1&amp;controls=0&amp;muted=1"
                   className="absolute top-0 -left-[87px] w-[calc(100%+200px)]  xl:-left-[220px]  md:w-[1160px] h-full rounded-md md:rounded-l-3xl md:rounded-r-none"
                   frameBorder="0"
                   allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
@@ -1357,9 +1357,10 @@ export default function Home() {
           }}
         ></motion.div>
         <div className="relative z-10 w-full max-w-none">
-          <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+          <div className="relative w-full" style={{ paddingTop: "56.28%" }}>
+            {/* https://player.vimeo.com/video/1100595856 */}
             <iframe
-              src="https://player.vimeo.com/video/1100595856?background=1&autoplay=1&muted=1&autopause=0"
+              src="https://player.vimeo.com/video/1113245070?title=0&amp;badge=0&amp;autopause=0&amp;player_id=0&amp;app_id=58479&amp;autoplay=1&amp;loop=1&amp;controls=0&amp;muted=1"
               frameBorder="0"
               allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
               allowFullScreen

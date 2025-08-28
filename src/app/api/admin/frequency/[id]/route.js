@@ -69,6 +69,7 @@ export async function PUT(request, context) {
     // accept either "audioName" or "name"
     const audioName = formData.get("audioName") || formData.get("name")
     let area = formData.get("area")
+    const description = formData.get("description") || ""
     const file = formData.get("file")
 
     if (!audioName) {
@@ -109,6 +110,7 @@ export async function PUT(request, context) {
     const updateData = {
       audioName,
       area,
+      description,
       updatedAt: new Date(),
     }
 

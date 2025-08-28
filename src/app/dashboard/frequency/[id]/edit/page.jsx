@@ -23,6 +23,7 @@ export default function EditFrequencyPage({ params }) {
   const [formData, setFormData] = useState({
     audioName: "",
     area: "none",
+    description: "",
   })
   const [file, setFile] = useState(null)
   const [currentFrequency, setCurrentFrequency] = useState(null)
@@ -55,6 +56,7 @@ export default function EditFrequencyPage({ params }) {
         setFormData({
           audioName: data.audio.audioName || "",
           area: data.audio.area || "none",
+          description: data.audio.description || "",
         })
 
         // fetch all frequencies to check taken areas
@@ -137,6 +139,7 @@ export default function EditFrequencyPage({ params }) {
       const formDataToSend = new FormData()
       formDataToSend.append("audioName", formData.audioName)
       formDataToSend.append("area", formData.area || "none")
+      formDataToSend.append("description", formData.description)
       if (file) formDataToSend.append("file", file)
 
       const response = await fetch(`/api/admin/frequency/${id}`, {
@@ -250,6 +253,17 @@ export default function EditFrequencyPage({ params }) {
                 <p className="text-sm text-gray-400 mt-1">
                   Only one audio per area is allowed. "None" means no area restriction.
                 </p>
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Enter frequency description (optional)"
+                />
               </div>
 
               <div>
