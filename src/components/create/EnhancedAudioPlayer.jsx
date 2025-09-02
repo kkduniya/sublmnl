@@ -73,6 +73,18 @@ export default function EnhancedAudioPlayer({
   const previewTimeoutRef = useRef(null)
   const [showPreviewPopup, setShowPreviewPopup] = useState(false)
 
+  const CHATGPT_VOICE_MAP = {
+    breeze: "alloy",
+    cove: "echo",
+    ember: "fable",
+    juniper: "onyx",
+    arbor: "nova",
+    maple: "shimmer",
+    sol: "coral",
+    spruce: "verse",
+    vale: "ballad",
+  };
+
   // Update the ref when the prop changes
   useEffect(() => {
     playAffirmationsRef.current = !disableAffirmations
@@ -457,80 +469,110 @@ export default function EnhancedAudioPlayer({
     speakAffirmation(affirmations[0], 0)
   }
 
-  const speakAffirmation = (text, index) => {
-    if (!speechSynthesisRef.current || !isPlayingRef.current || disableAffirmations) return
+  const speakAffirmation = async (text, index) => {
+    if (!isPlayingRef.current || disableAffirmations) return;
 
-    // Cancel any ongoing speech first
-    speechSynthesisRef.current.cancel()
+    // If ChatGPT voice → fetch TTS audio
+    if (voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
+      try {
+        const resp = await fetch("/api/chatgpt-tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            voice: voiceSettings.voice, // friendly name
+          }),
+        });
 
-    // Create a new utterance
-    const utterance = new SpeechSynthesisUtterance(text)
-    utteranceRef.current = utterance
+        if (!resp.ok) throw new Error("ChatGPT TTS failed");
 
-    // Apply voice settings if available
-    if (voiceSettings && voiceSettings.voice) {
-      // Find a voice that matches the selected voice type
-      const voices = speechSynthesisRef.current.getVoices()
-      const selectedVoice = voices.find((v) => v.name === voiceSettings.voice)
-      if (selectedVoice) {
-        utterance.voice = selectedVoice
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+
+        audio.volume = affirmationsVolume;
+        audio.play();
+
+        audio.onplay = () => {
+          setCurrentAffirmationIndex(index);
+          setIsAffirmationPlaying(true);
+        };
+
+        audio.onended = () => {
+          setIsAffirmationPlaying(false);
+
+          // Move to next affirmation or repeat
+          if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
+            setTimeout(() => {
+              speakAffirmation(affirmations[index + 1], index + 1);
+            }, 1000);
+          } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
+            if (repetitionInterval > 0) {
+              affirmationTimerRef.current = setTimeout(() => {
+                speakAffirmation(affirmations[0], 0);
+              }, repetitionInterval * 1000);
+            }
+          }
+        };
+
+        audio.onerror = (err) => {
+          console.error("ChatGPT TTS audio error:", err);
+          setIsAffirmationPlaying(false);
+        };
+      } catch (err) {
+        console.error("ChatGPT TTS fetch error:", err);
       }
+      return;
     }
 
-    // Set rate to 1.0 (normal speed)
-    utterance.rate = speed
+    // --- Browser/system voice fallback ---
+    if (!speechSynthesisRef.current) return;
+    speechSynthesisRef.current.cancel();
 
-    // Set volume based on affirmationsVolume
-    utterance.volume = affirmationsVolume
+    const utterance = new SpeechSynthesisUtterance(text);
+    utteranceRef.current = utterance;
 
-    // Set event handlers
+    // Apply selected browser voice
+    if (voiceSettings && voiceSettings.voice) {
+      const voices = speechSynthesisRef.current.getVoices();
+      const selectedVoice = voices.find((v) => v.name === voiceSettings.voice);
+      if (selectedVoice) utterance.voice = selectedVoice;
+    }
+
+    utterance.rate = speed;
+    utterance.volume = affirmationsVolume;
+
     utterance.onstart = () => {
-      setCurrentAffirmationIndex(index)
-      setIsAffirmationPlaying(true)
-    }
+      setCurrentAffirmationIndex(index);
+      setIsAffirmationPlaying(true);
+    };
 
     utterance.onend = () => {
-      setIsAffirmationPlaying(false)
-
-      // If there are more affirmations, speak the next one
+      setIsAffirmationPlaying(false);
       if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
-        // Add a small delay between affirmations
         setTimeout(() => {
-          speakAffirmation(affirmations[index + 1], index + 1)
-        }, 1000)
-      } else {
-        // If we've spoken all affirmations and audio is still playing
-        if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-          // Only schedule repetition if repetitionInterval > 0
-          if (repetitionInterval > 0) {
-
-            // Schedule the next round of affirmations after the specified interval
-            affirmationTimerRef.current = setTimeout(() => {
-              if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-                speakAffirmation(affirmations[0], 0)
-              }
-            }, repetitionInterval * 1000)
-          } else {
-            console.log("Repetition disabled, not scheduling next round")
-          }
+          speakAffirmation(affirmations[index + 1], index + 1);
+        }, 1000);
+      } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
+        if (repetitionInterval > 0) {
+          affirmationTimerRef.current = setTimeout(() => {
+            speakAffirmation(affirmations[0], 0);
+          }, repetitionInterval * 1000);
         }
       }
-    }
+    };
 
     utterance.onerror = (e) => {
-      console.error("Speech synthesis error:", e)
-      setIsAffirmationPlaying(false)
-      if (onError) onError(e)
-    }
+      console.error("Speech synthesis error:", e);
+      setIsAffirmationPlaying(false);
+    };
 
-    // Speak the utterance
     try {
-      speechSynthesisRef.current.speak(utterance)
+      speechSynthesisRef.current.speak(utterance);
     } catch (error) {
-      console.error("Error starting speech synthesis:", error)
+      console.error("Error starting speech synthesis:", error);
     }
-  }
-
+  };
   
   // const togglePlayPause = () => {
   //   if (!audioRef.current) return
