@@ -59,6 +59,7 @@ const BottomPlayer = forwardRef(
     const speechSynthesisRef = useRef(null)
     const affirmationTimerRef = useRef(null)
     const affirmationTimeoutRef = useRef(null)
+    const activeAffirmationAudioRef = useRef(null);
 
     const isAdmin = user?.role === "admin"
 
@@ -125,10 +126,17 @@ const BottomPlayer = forwardRef(
         if (audioRef.current) {
           audioRef.current.pause()
         }
+        stopAffirmations();
 
         // Stop any ongoing speech
         if (speechSynthesisRef.current) {
           speechSynthesisRef.current.cancel()
+        }
+
+        if (activeAffirmationAudioRef.current) {
+          activeAffirmationAudioRef.current.pause()
+          activeAffirmationAudioRef.current.src = ""
+          activeAffirmationAudioRef.current = null
         }
       },
       reset: () => {
@@ -138,11 +146,7 @@ const BottomPlayer = forwardRef(
 
         // Reset affirmation index
         setCurrentAffirmationIndex(0)
-
-        // Stop any ongoing speech
-        if (speechSynthesisRef.current) {
-          speechSynthesisRef.current.cancel()
-        }
+        stopAffirmations();
       },
       getCurrentTime: () => currentTime,
       getDuration: () => duration,
@@ -169,25 +173,10 @@ const BottomPlayer = forwardRef(
           }
         } else {
           audioRef.current.pause()
-
-          // Pause frequency audio
           if (frequencyAudioRef.current) {
             frequencyAudioRef.current.pause()
           }
-
-          // Stop any ongoing speech
-          if (speechSynthesisRef.current) {
-            speechSynthesisRef.current.cancel()
-          }
-
-          // Clear any timers
-          if (affirmationTimerRef.current) {
-            clearTimeout(affirmationTimerRef.current)
-          }
-
-          if (affirmationTimeoutRef.current) {
-            clearTimeout(affirmationTimeoutRef.current)
-          }
+          stopAffirmations() 
         }
       }
     }, [isPlaying, audioUrl, affirmations, frequencyUrl])
@@ -341,19 +330,48 @@ const BottomPlayer = forwardRef(
       speakAffirmation(affirmations[0], 0)
     }
 
+    // Function to stop affirmations
+    const stopAffirmations = () => {
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+
+      if (affirmationTimerRef.current) {
+        clearTimeout(affirmationTimerRef.current);
+        affirmationTimerRef.current = null;
+      }
+
+      if (affirmationTimeoutRef.current) {
+        clearTimeout(affirmationTimeoutRef.current);
+        affirmationTimeoutRef.current = null;
+      }
+
+      // ✅ also stop any scheduled setTimeouts from handleSeek
+      clearTimeout(affirmationTimeoutRef.current);
+
+      if (activeAffirmationAudioRef.current) {
+        activeAffirmationAudioRef.current.pause();
+        activeAffirmationAudioRef.current.src = "";
+        activeAffirmationAudioRef.current = null;
+      }
+
+      setIsAffirmationPlaying(false);
+      setCurrentAffirmationIndex(0);
+    };
+
     // Function to speak an affirmation
     const speakAffirmation = async (text, index) => {
       if (!isPlaying) return;
-
+      const selectedVoice = voiceSettings?.voice || voiceSettings?.voiceType;
       // --- ChatGPT voice branch ---
-      if (voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
+      if (selectedVoice && CHATGPT_VOICE_MAP[selectedVoice]) {
         try {
           const resp = await fetch("/api/chatgpt-tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               text,
-              voice: voiceSettings.voice, // friendly name like "breeze"
+              voice: selectedVoice, // friendly name like "breeze"
             }),
           });
 
@@ -361,9 +379,19 @@ const BottomPlayer = forwardRef(
 
           const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
+          // Stop any existing affirmation audio first
+          if (activeAffirmationAudioRef.current) {
+            activeAffirmationAudioRef.current.pause();
+            activeAffirmationAudioRef.current.src = "";
+            activeAffirmationAudioRef.current = null;
+          }
           const audio = new Audio(url);
 
           audio.volume = affirmationsVolume;
+
+          // Save reference so we can stop it later
+          activeAffirmationAudioRef.current = audio; 
+
           audio.onplay = () => {
             setCurrentAffirmationIndex(index);
             setIsAffirmationPlaying(true);
@@ -449,39 +477,29 @@ const BottomPlayer = forwardRef(
 
     // Handle seeking
     const handleSeek = (value) => {
-      const seekTime = value[0]
-      setCurrentTime(seekTime)
+      const seekTime = value[0];
+      setCurrentTime(seekTime);
 
       if (audioRef.current) {
-        audioRef.current.currentTime = seekTime
+        audioRef.current.currentTime = seekTime;
       }
 
       // Sync frequency audio position
       if (frequencyAudioRef.current && frequencyUrl) {
-        const frequencyDuration = frequencyAudioRef.current.duration || 1
-        frequencyAudioRef.current.currentTime = seekTime % frequencyDuration
+        const frequencyDuration = frequencyAudioRef.current.duration || 1;
+        frequencyAudioRef.current.currentTime = seekTime % frequencyDuration;
       }
 
-      // If we're playing and have affirmations, we need to restart them
+      // Restart affirmations safely
       if (isPlaying && affirmations.length > 0) {
-        // Cancel any current speech
-        if (speechSynthesisRef.current) {
-          speechSynthesisRef.current.cancel()
-        }
-
-        // Clear any pending timers
-        if (affirmationTimerRef.current) {
-          clearTimeout(affirmationTimerRef.current)
-        }
-
-        if (affirmationTimeoutRef.current) {
-          clearTimeout(affirmationTimeoutRef.current)
-        }
-
-        // Start speaking affirmations again
-        startAffirmations()
+        stopAffirmations();   // 🛑 stop any old affirmations first
+        setTimeout(() => {
+          if (isPlaying) {
+            startAffirmations();
+          }
+        }, 200);
       }
-    }
+    };
 
     // Format time (seconds to MM:SS)
     const formatTime = (time) => {

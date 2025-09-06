@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
@@ -1238,7 +1238,7 @@ export default function CreatePage() {
         {/* Progress steps */}
         <div className="flex justify-between items-center mb-8 max-w-3xl mx-auto">
           {[1,2,3,4].map((s, idx) => (
-            <>
+            <React.Fragment key={s}>
               {maxStepReached >= s ? (
                 <button
                   key={s}
@@ -1290,7 +1290,7 @@ export default function CreatePage() {
                 </div>
               )}
               {idx < 3 && <div className="flex-1 mx-4 border-t border-gray-700"></div>}
-            </>
+            </React.Fragment>
           ))}
         </div>
 
