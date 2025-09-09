@@ -491,6 +491,7 @@ export default function EnhancedAudioPlayer({
         const audio = new Audio(url);
 
         audio.volume = affirmationsVolume;
+        audio.playbackRate = speed;
         audio.play();
 
         audio.onplay = () => {

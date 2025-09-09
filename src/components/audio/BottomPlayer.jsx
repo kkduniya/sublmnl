@@ -388,6 +388,7 @@ const BottomPlayer = forwardRef(
           const audio = new Audio(url);
 
           audio.volume = affirmationsVolume;
+          audio.playbackRate = voiceSettings.voiceSpeed || 1.0;
 
           // Save reference so we can stop it later
           activeAffirmationAudioRef.current = audio; 
