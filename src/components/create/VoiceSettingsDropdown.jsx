@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, ChevronDown, Volume2 } from "lucide-react";
+import { Play, ChevronDown, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // ChatGPT voices (via OpenAI TTS, not browser speechSynthesis)
@@ -201,6 +201,8 @@ export default function VoiceSettingsDropdown({
   const [mappedVoices, setMappedVoices] = useState([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingVoiceId, setGeneratingVoiceId] = useState(null);
   const [testMessage, setTestMessage] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -333,12 +335,12 @@ export default function VoiceSettingsDropdown({
     }
 
     setTestMessage(testText);
-    setIsPlaying(true);
-    setPlayingVoiceId(voice.id);
 
     if (voice.isChatGPT) {
       // 🔹 ChatGPT voices → call your backend API
       try {
+        setIsGenerating(true);
+        setGeneratingVoiceId(voice.id);
         const resp = await fetch("/api/chatgpt-tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -351,11 +353,19 @@ export default function VoiceSettingsDropdown({
         const audioURL = URL.createObjectURL(audioBlob);
 
         const audio = new Audio(audioURL);
+        audio.onplay = () => {
+          setIsGenerating(false);
+          setGeneratingVoiceId(null);
+          setIsPlaying(true);
+          setPlayingVoiceId(voice.id);
+        };
         audio.onended = () => {
           setIsPlaying(false);
           setPlayingVoiceId(null);
         };
         audio.onerror = () => {
+          setIsGenerating(false);
+          setGeneratingVoiceId(null);
           setIsPlaying(false);
           setPlayingVoiceId(null);
         };
@@ -363,6 +373,8 @@ export default function VoiceSettingsDropdown({
         audio.play();
       } catch (err) {
         console.error("ChatGPT TTS error:", err);
+        setIsGenerating(false);
+        setGeneratingVoiceId(null);
         setIsPlaying(false);
         setPlayingVoiceId(null);
       }
@@ -377,6 +389,8 @@ export default function VoiceSettingsDropdown({
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
         utterance.volume = 0.8;
+        setIsPlaying(true);
+        setPlayingVoiceId(voice.id);
         utterance.onend = () => {
           setIsPlaying(false);
           setPlayingVoiceId(null);
@@ -489,11 +503,19 @@ export default function VoiceSettingsDropdown({
       <div className="flex justify-between items-center">
         <Button
           onClick={() => testVoice()}
-          disabled={isPlaying || mappedVoices.length === 0}
+          disabled={isGenerating || isPlaying || mappedVoices.length === 0}
           className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full px-5 py-2 text-sm"
         >
-          {isPlaying ? (
-            <div className="animate-pulse">Testing...</div>
+          {isGenerating ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Generating...</span>
+            </>
+          ) : isPlaying ? (
+            <>
+              <Play className="h-3.5 w-3.5" />
+              <span>Testing...</span>
+            </>
           ) : (
             <>
               <Play className="h-3.5 w-3.5" />

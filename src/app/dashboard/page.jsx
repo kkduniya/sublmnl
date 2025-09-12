@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDistanceToNow, format } from "date-fns"
+import AllTracksSection from "@/components/dashboard/AllTracksSection"
 
 export default function DashboardPage() {
   const { user, requireAuth } = useAuth()
@@ -486,77 +487,7 @@ export default function DashboardPage() {
 
       <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700">
         <CardContent className="p-6">
-          <div className="flex border-b border-gray-700 mb-6">
-            <button
-              className={`py-3 px-6 font-medium ${activeTab === "all" ? "text-primary border-b-2 border-primary" : "text-gray-400 hover:text-gray-200"
-                }`}
-              onClick={() => setActiveTab("all")}
-            >
-              All Tracks ({audios.length})
-            </button>
-          </div>
-
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : displayedAudios.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400 mb-4">
-                {activeTab === "favorites"
-                  ? "You haven't favorited any audio tracks yet."
-                  : "You haven't created any subliminal audio tracks yet."}
-              </p>
-              {activeTab === "all" && (
-                <Link
-                  href="/create"
-                  className="bg-gradient-to-r from-primary to-purple-500 rounded-md py-2 px-5 hover:opacity-90 transition-opacity text-white font-medium"
-                >
-                  Create Your First Audio
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left py-3 px-4">Name</th>
-                    <th className="text-left py-3 px-4">Created</th>
-                    <th className="text-left py-3 px-4">Voice</th>
-                    <th className="text-left py-3 px-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedAudios.map((audio) => (
-                    <tr key={audio.id} className="border-b border-gray-700 hover:bg-gray-800/30 transition-colors">
-                      <td className="py-3 px-4">{audio.name}</td>
-                      <td className="py-3 px-4">{formatDate(audio.createdAt)}</td>
-                      <td className="py-3 px-4">
-                        {
-                          audio?.voiceName ? audio?.voiceName :
-                        audio?.voiceType?.split("-").slice(-1)[0] 
-                        }
-                      </td>
-                      <td className="py-3 px-4 flex space-x-2">
-                        <button
-                          onClick={() => handlePlay(audio)}
-                          className="p-2 bg-gradient-to-r from-primary/20 to-purple-500/20 hover:from-primary/30 hover:to-purple-500/30 rounded-full transition-colors"
-                          aria-label={isPlaying && currentAudio?.id === audio.id ? "Pause" : "Play"}
-                        >
-                          {isPlaying && currentAudio?.id === audio.id ? (
-                            <PauseIcon className="h-5 w-5 text-primary" />
-                          ) : (
-                            <PlayIcon className="h-5 w-5 text-primary" />
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <AllTracksSection />
         </CardContent>
       </Card>
     </div>

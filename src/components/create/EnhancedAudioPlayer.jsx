@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Volume2, VolumeX } from "lucide-react"
+import { Volume2, VolumeX, Loader2 } from "lucide-react"
 import { prepareAudio, syncSpeechWithMusic as syncSpeechWithAudio } from "@/lib/audio-sync"
 import { useAuth } from "@/context/AuthContext"
 import PreviewPopup from "./PreviewPopup"
@@ -44,6 +44,7 @@ export default function EnhancedAudioPlayer({
   const [isMuted, setIsMuted] = useState(false)
   const [currentAffirmationIndex, setCurrentAffirmationIndex] = useState(0)
   const [isAffirmationPlaying, setIsAffirmationPlaying] = useState(false)
+  const [isVoiceLoading, setIsVoiceLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isSeeking, setIsSeeking] = useState(false) // Track if user is seeking
 
@@ -67,6 +68,7 @@ export default function EnhancedAudioPlayer({
   const lastSeekTime = useRef(0)
   const currentUtteranceRef = useRef(null)
   const affirmationTimeoutRef = useRef(null)
+  const preloadedAffirmationAudioRef = useRef(null)
   const [speakAffirmations, setSpeakAffirmations] = useState(true)
   const completedAffirmationsRef = useRef(false) // Track if we've completed all affirmations
   const hasPreviewedRef = useRef(false)
@@ -475,6 +477,35 @@ export default function EnhancedAudioPlayer({
     // If ChatGPT voice → fetch TTS audio
     if (voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
       try {
+        // If we already preloaded this first affirmation, use it
+        if (preloadedAffirmationAudioRef.current && index === 0) {
+          const audio = preloadedAffirmationAudioRef.current
+          preloadedAffirmationAudioRef.current = null
+          audio.onplay = () => {
+            setCurrentAffirmationIndex(index);
+            setIsAffirmationPlaying(true);
+          };
+          audio.onended = () => {
+            setIsAffirmationPlaying(false);
+            if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
+              setTimeout(() => {
+                speakAffirmation(affirmations[index + 1], index + 1);
+              }, 1000);
+            } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
+              if (repetitionInterval > 0) {
+                affirmationTimerRef.current = setTimeout(() => {
+                  speakAffirmation(affirmations[0], 0);
+                }, repetitionInterval * 1000);
+              }
+            }
+          };
+          audio.onerror = (err) => {
+            console.error("ChatGPT TTS audio error (preloaded):", err);
+            setIsAffirmationPlaying(false);
+          };
+          audio.play();
+          return;
+        }
         const resp = await fetch("/api/chatgpt-tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -647,7 +678,7 @@ export default function EnhancedAudioPlayer({
   //   }
   // }
 
-  const togglePlayPause = () => {
+  const togglePlayPause = async () => {
     if (!audioRef.current) return
 
     // Pause if already playing
@@ -689,6 +720,35 @@ export default function EnhancedAudioPlayer({
     completedAffirmationsRef.current = false
     setCurrentAffirmationIndex(0)
 
+    // If using ChatGPT voice and affirmations enabled, preload first affirmation before starting
+    let firstAffirmationAudio = null
+    if (affirmations.length > 0 && !disableAffirmations && voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
+      try {
+        setIsVoiceLoading(true)
+        const resp = await fetch("/api/chatgpt-tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: affirmations[0],
+            voice: voiceSettings.voice,
+          }),
+        })
+        if (!resp.ok) throw new Error("ChatGPT TTS failed")
+        const blob = await resp.blob()
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        audio.volume = affirmationsVolume
+        audio.playbackRate = speed
+        preloadedAffirmationAudioRef.current = audio
+        firstAffirmationAudio = audio
+      } catch (e) {
+        console.error("Failed to preload first affirmation:", e)
+        preloadedAffirmationAudioRef.current = null
+      } finally {
+        // we keep loading spinner until music starts to ensure synchronized UX
+      }
+    }
+
     const playPromise = audioRef.current.play()
 
     if (playPromise !== undefined) {
@@ -708,9 +768,36 @@ export default function EnhancedAudioPlayer({
           }
 
           if (affirmations.length > 0 && !disableAffirmations) {
-            setTimeout(() => {
-              startAffirmations()
-            }, 1000)
+            // If we have a preloaded first affirmation, play it immediately; else start normal flow
+            if (firstAffirmationAudio) {
+              setIsVoiceLoading(false)
+              firstAffirmationAudio.onplay = () => {
+                setCurrentAffirmationIndex(0)
+                setIsAffirmationPlaying(true)
+              }
+              firstAffirmationAudio.onended = () => {
+                setIsAffirmationPlaying(false)
+                if (affirmations.length > 1 && isPlayingRef.current && !disableAffirmations) {
+                  setTimeout(() => speakAffirmation(affirmations[1], 1), 1000)
+                }
+              }
+              // Small delay to ensure music is audible first
+              setTimeout(() => {
+                // Music may be paused by preview gating; only play if still playing
+                if (audioRef.current && !audioRef.current.paused) {
+                  firstAffirmationAudio.play().catch((err) => {
+                    console.error("First affirmation play error:", err)
+                  })
+                }
+              }, 150)
+            } else {
+              setIsVoiceLoading(false)
+              setTimeout(() => {
+                startAffirmations()
+              }, 1000)
+            }
+          } else {
+            setIsVoiceLoading(false)
           }
 
           // ---- Guest users only ----
@@ -870,6 +957,7 @@ export default function EnhancedAudioPlayer({
           console.error("Play error:", err)
           setError(`Failed to play audio: ${err.message}`)
           if (onError) onError(err)
+          setIsVoiceLoading(false)
         })
     }
   }
@@ -1445,7 +1533,9 @@ export default function EnhancedAudioPlayer({
               className="w-10 h-10 rounded-full bg-[#c1fc75]/40 hover:bg-[#c1fc75]/30 flex items-center justify-center flex-shrink-0"
               aria-label={isPlaying ? "Pause" : "Play"}
             >
-              {isPlaying ? (
+              {isVoiceLoading && !isPlaying ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : isPlaying ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 text-white"
