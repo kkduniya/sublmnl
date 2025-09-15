@@ -1918,10 +1918,10 @@ export default function CreatePage() {
 
                           <div className="flex-grow">
                             <h3 className="font-medium">{track.name}</h3>
-                            <p className="text-gray-400 text-sm">
+                            {/* <p className="text-gray-400 text-sm">
                               {track.category}
-                              {/* • {track.duration} */}
-                            </p>
+                              • {track.duration}
+                            </p> */}
                           </div>
 
                           <button
