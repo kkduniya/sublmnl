@@ -13,8 +13,8 @@ import { Suspense } from "react"
 import { Loader } from "lucide-react"
 
 export const metadata = {
-  title: "Sublmnl - Subliminal Audio Creation",
-  description: "Create personalized subliminal audio tracks for self-improvement",
+  title: "Sublmnl",
+  description: "Custom AI-powered subliminal tracks personalized to your goals. Shift your mindset. Change your life.",
 }
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,7 +24,8 @@ export default function RootLayout({ children }) {
     <html lang="en" className="dark">
       <head>
         {/* Google Search Console */}
-        <meta name="google-site-verification" content="NP4oeWdgwG4GjsigdOGo7xArBt-t5rNYZ_IlPHSccEA" />
+        <meta name="google-site-verification" content="ESyiNaPQncO03r4sncMAyBd8tCWeSF-IXfZo6RZFVP4" />
+        {/* <meta name="google-site-verification" content="NP4oeWdgwG4GjsigdOGo7xArBt-t5rNYZ_IlPHSccEA" /> */}
       </head>
       <body className={`${inter.className} min-h-screen bg-[#000] text-gray-100`}>
 
