@@ -487,15 +487,28 @@ export default function EnhancedAudioPlayer({
           };
           audio.onended = () => {
             setIsAffirmationPlaying(false);
-            if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
-              setTimeout(() => {
-                speakAffirmation(affirmations[index + 1], index + 1);
-              }, 1000);
-            } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-              if (repetitionInterval > 0) {
+            // if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
+            //   setTimeout(() => {
+            //     speakAffirmation(affirmations[index + 1], index + 1);
+            //   }, 1000);
+            // } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
+            //   if (repetitionInterval > 0) {
+            //     affirmationTimerRef.current = setTimeout(() => {
+            //       speakAffirmation(affirmations[0], 0);
+            //     }, repetitionInterval * 1000);
+            //   }
+            // }
+             const hasMore = index < affirmations.length - 1;
+            if (isPlayingRef.current && !disableAffirmations && audioRef.current && !audioRef.current.ended) {
+              if (hasMore) {
+                // Play next affirmation
+                setTimeout(() => speakAffirmation(affirmations[index + 1], index + 1), 1000);
+              } else {
+                // Restart from first affirmation
+                const delay = repetitionInterval > 0 ? repetitionInterval * 1000 : 1000;
                 affirmationTimerRef.current = setTimeout(() => {
                   speakAffirmation(affirmations[0], 0);
-                }, repetitionInterval * 1000);
+                }, delay);
               }
             }
           };
