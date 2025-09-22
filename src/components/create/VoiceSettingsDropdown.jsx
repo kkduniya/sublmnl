@@ -80,117 +80,6 @@ const CHATGPT_VOICES = [
   },
 ];
 
-// Define voice personas with the specific voices requested
-const VOICE_PERSONAS = [
-  ...CHATGPT_VOICES,
-  // Female voices
-  // {
-  //   id: "lesya",
-  //   name: "LESYA",
-  //   category: "SOOTHING",
-  //   color: "#FFDEAD",
-  //   priority: 1,
-  //   voicePattern: /lesya|samantha|google.*us.*english.*female|chrome.*us.*english.*female/i,
-  // },
-  // {
-  //   id: "lily",
-  //   name: "LILY",
-  //   category: "STORYTELLING",
-  //   color: "#9C5CFF",
-  //   priority: 2,
-  //   voicePattern: /lily|lili|victoria|karen|helena|google.*uk.*english.*female|chrome.*uk.*english.*female|british.*female/i,
-  // },
-  // {
-  //   id: "google-hindi",
-  //   name: "PRIYA",
-  //   category: "PROFESSIONAL",
-  //   color: "#159759",
-  //   priority: 3,
-  //   voicePattern: /google.*hindi|hindi|indian|priya|neha|hindi.*female/i,
-  // },
-  // {
-  //   id: "google-hindi-female",
-  //   name: "SITA",
-  //   category: "PROFESSIONAL",
-  //   color: "#159759",
-  //   priority: 4,
-  //   // voicePattern: /google.*hindi.*female|hindi.*female|sita|indian.*female|female.*hindi|google.*hindi.*neha|neha.*hindi|hindi.*neha/i,
-  //   voicePattern: /google\s?hindi.*\(भारत\)|google.*hindi.*female|hindi.*female|sita|neha/i
-  // },
-  // {
-  //   id: "microsoft-kalpana",
-  //   name: "KALPANA",
-  //   category: "PROFESSIONAL",
-  //   color: "#00bcd4",
-  //   priority: 5,
-  //   voicePattern: /microsoft.*kalpana|kalpana|heera|google.*hindi.*female|hindi.*female/i,
-  // },
-  // {
-  //   id: "google-us-english",
-  //   name: "SAMANTHA",
-  //   category: "CONVERSATIONAL",
-  //   color: "#5CAAFF",
-  //   priority: 6,
-  //   voicePattern: /google.*us.*english|english.*us|samantha|google.*female|chrome.*female|female.*en|en.*female/i,
-  // },
-  // {
-  //   id: "nicky",
-  //   name: "NICKY",
-  //   category: "SOOTHING",
-  //   color: "#FF8C5C",
-  //   priority: 7,
-  //   voicePattern: /nicky|nicole|nina|female.*en|en.*female|google.*female/i,
-  // },
-  // {
-  //   id: "emily",
-  //   name: "EMILY",
-  //   category: "SOOTHING",
-  //   color: "#FFC2E2",
-  //   priority: 8,
-  //   voicePattern: /emily|soothing.*us|female.*en|en.*female|google.*female|chrome.*female/i,
-  // },
-
-  // Male voices
-  // {
-  //   id: "rishi",
-  //   name: "RISHI",
-  //   category: "NATURAL",
-  //   color: "#5C7CFF",
-  //   priority: 9,
-  //   voicePattern: /rishi|male.*en|en.*male|google.*male|chrome.*male|daniel|john|michael|david/i,
-  // },
-  // {
-  //   id: "aaron",
-  //   name: "AARON",
-  //   category: "PROFESSIONAL",
-  //   color: "#5CFFE1",
-  //   priority: 10,
-  //   voicePattern: /aaron|alex|male.*en|en.*male|google.*male|chrome.*male|daniel|john|michael/i,
-  // },
-  // {
-  //   id: "arthur",
-  //   name: "ARTHUR",
-  //   category: "CONVERSATIONAL",
-  //   color: "#C45CFF",
-  //   priority: 11,
-  //   voicePattern: /arthur|male.*en|en.*male|google.*male|chrome.*male|daniel|john|michael|david/i,
-  // },
-  // {
-  //   id: "thomas",
-  //   name: "THOMAS",
-  //   category: "STORYTELLING",
-  //   color: "#FFD45C",
-  //   priority: 12,
-  //   voicePattern: /thomas|daniel|john|michael|male.*us|english.*us|male.*en|en.*male|google.*male|chrome.*male/i,
-  // },
-];
-
-// Fallback patterns for common voices  
-// const FALLBACK_PATTERNS = [
-//   { name: "AMELIE", pattern: /female|woman|girl|samantha/i },
-//   { name: "RISHI", pattern: /male|man|boy|daniel/i },
-//   { name: "SAMANTHA", pattern: /google.*female|chrome.*female/i },
-// ];
 
 export default function VoiceSettingsDropdown({
   formData,
@@ -206,216 +95,81 @@ export default function VoiceSettingsDropdown({
   const [testMessage, setTestMessage] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Initialize voices
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      const updateBrowserVoices = () => {
-        const voices = window.speechSynthesis.getVoices();
-        setAvailableVoices(voices);
+  const voices = [...CHATGPT_VOICES].sort((a, b) => a.priority - b.priority);
 
-        // Sort personas by priority (lower number = higher priority)
-        // const sortedPersonas = [...VOICE_PERSONAS].sort(
-        //   (a, b) => a.priority - b.priority
-        // );
-        const sortedPersonas = [...VOICE_PERSONAS].filter((p) => p.isChatGPT).sort((a, b) => a.priority - b.priority);
+  // Set default voice if none selected
+  if (!formData.voiceType && voices.length > 0) {
+    updateFormData({ voiceType: voices[0].id, voicePersonaName: voices[0].name });
+  }
 
-        let voiceMapping = [];
-        const usedVoices = new Set();
-
-        // First pass: exact matches with language filtering (only if persona has voicePattern)
-        sortedPersonas.forEach((persona) => {
-          let matchedVoice = null;
-
-          if (persona.isChatGPT) {
-            // 🔹 Skip browser voice matching for ChatGPT voices
-            voiceMapping.push({
-              ...persona,
-              systemVoice: null,
-              value: persona.id, // use id as identifier for ChatGPT voices
-            });
-          } else if (persona.name === "SITA" || persona.name === "KALPANA") {
-            matchedVoice = voices.find(
-              (voice) =>
-                ((persona.voicePattern &&
-                  persona.voicePattern.test(voice.name.toLowerCase())) ||
-                  (voice.lang.includes("hi") &&
-                    voice.name.toLowerCase().includes("female"))) &&
-                !usedVoices.has(voice.name) &&
-                voice.lang.includes("hi") // Must be Hindi language
-            );
-          } else if (persona.name === "PRIYA") {
-            matchedVoice = voices.find(
-              (voice) =>
-                ((persona.voicePattern &&
-                  persona.voicePattern.test(voice.name.toLowerCase())) ||
-                  voice.lang.includes("hi")) &&
-                !usedVoices.has(voice.name) &&
-                voice.lang.includes("hi") // Must be Hindi language
-            );
-          } else if (persona.voicePattern) {
-            // Regular matching only if voicePattern exists
-            matchedVoice = voices.find(
-              (voice) =>
-                persona.voicePattern.test(voice.name.toLowerCase()) &&
-                !usedVoices.has(voice.name)
-            );
-          }
-
-          if (matchedVoice) {
-            voiceMapping.push({
-              ...persona,
-              systemVoice: matchedVoice,
-              value: matchedVoice.name,
-            });
-            usedVoices.add(matchedVoice.name);
-          }
-        });
-
-        // Second pass: assign remaining voices to unused personas (only for browser/system personas)
-        const remainingVoices = voices.filter(
-          (voice) => !usedVoices.has(voice.name)
-        );
-        const unusedPersonas = sortedPersonas.filter(
-          (persona) =>
-            !persona.isChatGPT &&
-            !voiceMapping.some((mapped) => mapped.id === persona.id)
-        );
-
-        remainingVoices.forEach((voice, index) => {
-          if (unusedPersonas[index]) {
-            voiceMapping.push({
-              ...unusedPersonas[index],
-              systemVoice: voice,
-              value: voice.name,
-            });
-          }
-        });
-
-        // Ensure we have at least one browser voice if nothing matched
-        // if (
-        //   voiceMapping.filter((v) => !v.isChatGPT).length === 0 &&
-        //   voices.length > 0
-        // ) {
-        //   voiceMapping.push({
-        //     ...sortedPersonas.find((p) => !p.isChatGPT),
-        //     systemVoice: voices[0],
-        //     value: voices[0].name,
-        //   });
-        // }
-
-        setMappedVoices(voiceMapping);
-
-        // Set default voice if none selected
-        if (!formData.voiceType && voiceMapping.length > 0) {
-          updateFormData({ voiceType: voiceMapping[0].value });
-        }
-      };
-
-      // Chrome loads voices asynchronously
-      if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        window.speechSynthesis.onvoiceschanged = updateBrowserVoices;
-      }
-
-      updateBrowserVoices();
-    }
-  }, [formData.voiceType, updateFormData]);
 
   // Test the voice with the first affirmation
-  const testVoice = async (voiceValue) => {
-    const voiceToTest = voiceValue || formData.voiceType;
-    if (!voiceToTest) return;
+  const testVoice = async (voiceId) => {
+    const selectedId = voiceId || formData.voiceType;
+    if (!selectedId) return;
 
-    const voice = mappedVoices.find((v) => v.value === voiceToTest);
+    const voice = voices.find((v) => v.id === selectedId);
     if (!voice) return;
 
     let testText =
-      "This is a test of how your affirmations will sound with this voice.";
-    if (affirmations && affirmations.length > 0) {
-      testText = affirmations[0];
-    }
+      affirmations && affirmations.length > 0
+        ? affirmations[0]
+        : "This is a test of how your affirmations will sound with this voice.";
 
     setTestMessage(testText);
 
-    if (voice.isChatGPT) {
-      // 🔹 ChatGPT voices → call your backend API
-      try {
-        setIsGenerating(true);
-        setGeneratingVoiceId(voice.id);
-        const resp = await fetch("/api/chatgpt-tts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: testText, voice: voice.id }),
-        });
+    try {
+      setIsGenerating(true);
+      setGeneratingVoiceId(voice.id);
 
-        if (!resp.ok) throw new Error("TTS API failed");
+      const resp = await fetch("/api/chatgpt-tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: testText, voice: voice.id }),
+      });
 
-        const audioBlob = await resp.blob();
-        const audioURL = URL.createObjectURL(audioBlob);
+      if (!resp.ok) throw new Error("TTS API failed");
 
-        const audio = new Audio(audioURL);
-        audio.onplay = () => {
-          setIsGenerating(false);
-          setGeneratingVoiceId(null);
-          setIsPlaying(true);
-          setPlayingVoiceId(voice.id);
-        };
-        audio.onended = () => {
-          setIsPlaying(false);
-          setPlayingVoiceId(null);
-        };
-        audio.onerror = () => {
-          setIsGenerating(false);
-          setGeneratingVoiceId(null);
-          setIsPlaying(false);
-          setPlayingVoiceId(null);
-        };
+      const audioBlob = await resp.blob();
+      const audioURL = URL.createObjectURL(audioBlob);
 
-        audio.play();
-      } catch (err) {
-        console.error("ChatGPT TTS error:", err);
+      const audio = new Audio(audioURL);
+      audio.onplay = () => {
+        setIsGenerating(false);
+        setGeneratingVoiceId(null);
+        setIsPlaying(true);
+        setPlayingVoiceId(voice.id);
+      };
+      audio.onended = () => {
+        setIsPlaying(false);
+        setPlayingVoiceId(null);
+      };
+      audio.onerror = () => {
         setIsGenerating(false);
         setGeneratingVoiceId(null);
         setIsPlaying(false);
         setPlayingVoiceId(null);
-      }
-    } else {
-      // 🔹 Browser/system voices → use speech synthesis
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(testText);
-        const voices = window.speechSynthesis.getVoices();
-        const selectedVoice = voices.find((v) => v.name === voice.value);
-        if (selectedVoice) utterance.voice = selectedVoice;
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.8;
-        setIsPlaying(true);
-        setPlayingVoiceId(voice.id);
-        utterance.onend = () => {
-          setIsPlaying(false);
-          setPlayingVoiceId(null);
-        };
-        utterance.onerror = () => {
-          setIsPlaying(false);
-          setPlayingVoiceId(null);
-        };
-        window.speechSynthesis.speak(utterance);
-      }
+      };
+
+      audio.play();
+    } catch (err) {
+      console.error("ChatGPT TTS error:", err);
+      setIsGenerating(false);
+      setGeneratingVoiceId(null);
+      setIsPlaying(false);
+      setPlayingVoiceId(null);
     }
   };
 
-  // Get the currently selected voice
-  const getSelectedVoice = () => {
-    return mappedVoices.find((v) => v.value === formData.voiceType) || null;
-  };
+  const selectedVoice = voices.find((v) => v.id === formData.voiceType) || null;
 
   // Handle voice selection
   const handleSelectVoice = (voice) => {
-    updateFormData({ voiceType: voice.value, voicePersonaName: voice.name });
+    console.log(voice);
+    
+    updateFormData({ voiceType: voice.id, voicePersonaName: voice.name });
     setIsDropdownOpen(false);
   };
-
-  const selectedVoice = getSelectedVoice();
 
   return (
     <div className="rounded-xl md:p-5 shadow-md">
@@ -451,7 +205,7 @@ export default function VoiceSettingsDropdown({
           {/* Dropdown */}
           {isDropdownOpen && (
             <div className="absolute z-10 mt-1 w-full bg-gray-900 border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-auto ">
-              {mappedVoices.map((voice) => (
+              {voices.map((voice) => (
                 <div
                   key={voice.id}
                   className={`flex items-center justify-between p-2.5 cursor-pointer hover:bg-gray-700 ${
@@ -467,7 +221,7 @@ export default function VoiceSettingsDropdown({
                       {voice.name ? voice.name.charAt(0) : "?"}
                     </div>
                     <span className="font-medium text-sm md:text-base truncate">
-                      {voice.name || "Unknown"}
+                      {voice.name}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -503,7 +257,7 @@ export default function VoiceSettingsDropdown({
       <div className="flex justify-between items-center">
         <Button
           onClick={() => testVoice()}
-          disabled={isGenerating || isPlaying || mappedVoices.length === 0}
+          disabled={isGenerating || isPlaying || voices.length === 0}
           className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-white rounded-full px-5 py-2 text-sm"
         >
           {isGenerating ? (

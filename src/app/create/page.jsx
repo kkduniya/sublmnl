@@ -1829,28 +1829,6 @@ export default function CreatePage() {
                         affirmations={selectedAffirmations}
                       />
 
-                      {/* <div>
-                        <label className="text-sm text-gray-400 mb-1 block">
-                          Voice Selection
-                        </label>
-                        <select
-                          value={formData.voiceType}
-                          onChange={(e) =>
-                            updateFormData({ voiceType: e.target.value })
-                          }
-                          className="w-full text-sm px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                        >
-                          {voiceLanguages.map((language) => (
-                            <optgroup key={language.code} label={language.name}>
-                              {groupedVoices[language.code]?.map((voice) => (
-                                <option key={voice.value} value={voice.value}>
-                                  {voice.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                      </div> */}
                     </div>
                   </div>
                 )}
@@ -1859,7 +1837,6 @@ export default function CreatePage() {
                   <div>
                     <span
                       className="flex items-center text-2xl font-bold bg-gradient-to-r from-[#e4ffa8] to-[#b1d239] bg-clip-text text-transparent"
-                      // style={{color:primaryColor}}
                     >
                       Create it.
                     </span>
@@ -1886,19 +1863,8 @@ export default function CreatePage() {
                             setCurrentPlayingTrackId(null);
                             audioRef?.current?.pause();
                           }}
-                          // style={{
-                          //   borderColor:
-                          //     formData.musicTrack?.id === track.id
-                          //       ? getThemeColor(0, "#4169E1")
-                          //       : "rgba(55, 65, 81, 0.7)",
-                          // }}
                         >
                           <div className="flex-shrink-0 w-6 h-6 md:w-12 md:h-12 bg-gray-800 rounded-md overflow-hidden mr-2 md:mr-4 flex items-center justify-center">
-                            {/* <img
-                              src={track.imageUrl || "/placeholder.svg"}
-                              alt={track.name}
-                              className="w-full h-full object-cover"
-                            /> */}
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               viewBox="0 0 24 24"
@@ -2050,12 +2016,6 @@ export default function CreatePage() {
                               className="flex items-center md:ml-2 bg-gradient-to-r from-[#e4ffa8] to-[#b1d239] text-black"
                               onClick={handleSaveToLibrary}
                               disabled={isDownloading}
-                              // style={{
-                              //   backgroundImage: `linear-gradient(to right, ${getThemeColor(
-                              //     2,
-                              //     "#22c55e"
-                              //   )}, ${getThemeColor(1, "#1E90FF")})`,
-                              // }}
                             >
                               {isDownloading ? (
                                 <>
