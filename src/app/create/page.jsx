@@ -1060,48 +1060,6 @@ export default function CreatePage() {
     setError("");
 
     try {
-      // First, try to process the audio with affirmations
-      const processResponse = await fetch("/api/audio/process", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          musicTrackUrl: formData.musicTrack.audioUrl,
-          affirmations: customAffirmations,
-          voiceSettings: {
-            voice: formData.voiceType,
-            volume: formData.affirmationsVolume,
-            repetitionInterval: formData.repetitionInterval,
-            speed: formData.speed,
-          },
-        }),
-      });
-
-      if (processResponse.ok) {
-        const processData = await processResponse.json();
-
-        if (processData.success && processData.processedAudioUrl) {
-          // Store the processed audio URL for download
-          setProcessedAudioUrl(processData.processedAudioUrl);
-          setFinalAudioUrl(processData.processedAudioUrl);
-
-          toast({
-            title: "Success",
-            description:
-              "Your Sublmnl audio has been created successfully with affirmations!",
-            variant: "success",
-          });
-
-          // Return early since we have the processed audio
-          setIsGeneratingFinal(false);
-          return;
-        }
-      }
-
-      // If processing fails, fall back to the generate API
-      console.warn("Audio processing failed, falling back to generate API");
-
       // Call the API to generate the audio with affirmations
       const response = await fetch("/api/audio/generate", {
         method: "POST",
@@ -1859,6 +1817,8 @@ export default function CreatePage() {
                           }`}
                           onClick={() => {
                             updateFormData({ musicTrack: track });
+                            setFinalAudioUrl("");      // reset
+                            setProcessedAudioUrl("");  // reset
                             setIsPreviewPlaying(false);
                             setCurrentPlayingTrackId(null);
                             audioRef?.current?.pause();

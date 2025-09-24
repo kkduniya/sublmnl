@@ -35,6 +35,38 @@ export async function POST(request) {
       },
     })
 
+    // === Subscribe to Klaviyo ===
+    try {
+      const klaviyoApiUrl = `https://a.klaviyo.com/api/v2/list/Vh6uXH/subscribe`
+      const privateApiKey = "pk_745e48284d87ef17bbec96989ff45f4a14"
+
+      const response = await fetch(klaviyoApiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          api_key: privateApiKey,
+          profiles: [
+            {
+              email,
+              first_name: firstName,
+              last_name: lastName,
+            },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Klaviyo subscription failed:", errorData)
+        // don’t fail registration if Klaviyo fails
+      }
+    } catch (klaviyoErr) {
+      console.error("Error subscribing to Klaviyo:", klaviyoErr)
+    }
+
     return NextResponse.json({
       success: true,
       message: "User registered successfully",
