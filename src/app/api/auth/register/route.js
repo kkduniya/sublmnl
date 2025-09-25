@@ -37,34 +37,59 @@ export async function POST(request) {
 
     // === Subscribe to Klaviyo ===
     try {
-      const klaviyoApiUrl = `https://a.klaviyo.com/api/v2/list/Vh6uXH/subscribe`
-      const privateApiKey = "pk_745e48284d87ef17bbec96989ff45f4a14"
+      const API_KEY = process.env.KLAVIYO_PRIVATE_API_KEY;
+      const LIST_ID = "XweW7S"
 
-      const response = await fetch(klaviyoApiUrl, {
+      // 1. Create/Update Profile
+      const profileRes = await fetch("https://a.klaviyo.com/api/profiles", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
+          "Content-Type": "application/vnd.api+json",
+          "Accept": "application/vnd.api+json",
+          "Authorization": `Klaviyo-API-Key ${API_KEY}`,
+          "revision": "2025-07-15",
         },
         body: JSON.stringify({
-          api_key: privateApiKey,
-          profiles: [
-            {
+          data: {
+            type: "profile",
+            attributes: {
               email,
               first_name: firstName,
               last_name: lastName,
             },
-          ],
+          },
         }),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error("Klaviyo subscription failed:", errorData)
-        // don’t fail registration if Klaviyo fails
+      if (!profileRes.ok) {
+        const err = await profileRes.json()
+        console.error("❌ Klaviyo profile creation failed:", err)
+      } else {
+        const profileData = await profileRes.json()
+        const profileId = profileData.data.id
+
+        // 2. Add profile to list
+        const listRes = await fetch(`https://a.klaviyo.com/api/lists/${LIST_ID}/relationships/profiles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/vnd.api+json",
+            "Authorization": `Klaviyo-API-Key ${API_KEY}`,
+            "revision": "2025-07-15",
+          },
+          body: JSON.stringify({
+            data: [{ type: "profile", id: profileId }],
+          }),
+        })
+
+        if (!listRes.ok) {
+          const err = await listRes.json()
+          console.error("❌ Klaviyo list attach failed:", err)
+        } else {
+          console.log("✅ Subscribed to Klaviyo successfully!")
+        }
       }
-    } catch (klaviyoErr) {
-      console.error("Error subscribing to Klaviyo:", klaviyoErr)
+    } catch (err) {
+      console.error("⚠️ Error subscribing to Klaviyo:", err)
     }
 
     return NextResponse.json({

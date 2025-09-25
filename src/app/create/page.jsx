@@ -106,6 +106,7 @@ export default function CreatePage() {
 
   const [currentPlayingTrackId, setCurrentPlayingTrackId] = useState(null);
   const audioRef = useRef(null);
+  const voiceAudioStopRef = useRef(null); // Add ref for voice audio stop function
 
   // Add this function inside the CreatePage component, after the useState declarations
   const { currentTheme } = useTheme();
@@ -483,6 +484,12 @@ export default function CreatePage() {
       setCurrentPlayingTrackId(null);
       audioRef?.current?.pause();
     }
+    
+    // Stop voice test audio if playing
+    if (voiceAudioStopRef.current) {
+      voiceAudioStopRef.current();
+    }
+    
     setStep((prev) => {
       const nextStep = prev + 1;
       setMaxStepReached((max) => Math.max(max, nextStep));
@@ -497,6 +504,11 @@ export default function CreatePage() {
   };
 
   const handleBack = () => {
+    // Stop voice test audio if playing
+    if (voiceAudioStopRef.current) {
+      voiceAudioStopRef.current();
+    }
+    
     setStep(step - 1);
     setError("");
     let newStep = step - 1;
@@ -1785,6 +1797,7 @@ export default function CreatePage() {
                         formData={formData}
                         updateFormData={updateFormData}
                         affirmations={selectedAffirmations}
+                        onStopAudio={voiceAudioStopRef}
                       />
 
                     </div>

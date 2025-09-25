@@ -51,8 +51,6 @@ export default function EnhancedAudioPlayer({
   const audioRef = useRef(null)
   const frequencyAudioRef = useRef(null) // Add frequency audio ref
   const progressBarRef = useRef(null)
-  const speechSynthesisRef = useRef(null)
-  const utteranceRef = useRef(null)
   const affirmationTimerRef = useRef(null)
   const previousSettingsRef = useRef(null)
   const animationRef = useRef(null)
@@ -66,7 +64,6 @@ export default function EnhancedAudioPlayer({
   const [audioError, setAudioError] = useState(null)
   const seekingRef = useRef(false) // Reference to track seeking state
   const lastSeekTime = useRef(0)
-  const currentUtteranceRef = useRef(null)
   const affirmationTimeoutRef = useRef(null)
   const preloadedAffirmationAudioRef = useRef(null)
   const [speakAffirmations, setSpeakAffirmations] = useState(true)
@@ -146,29 +143,15 @@ export default function EnhancedAudioPlayer({
     }
 
     const handleAudioEnd = () => {
-      // Stop any ongoing speech synthesis
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel()
-      }
-
       // Stop frequency audio when main audio ends
       if (frequencyAudioRef.current) {
         frequencyAudioRef.current.pause()
         frequencyAudioRef.current.currentTime = 0
       }
 
-      // Clear all timers
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-        affirmationTimerRef.current = null
-      }
+      // Stop all affirmations
+      stopAllAffirmations();
 
-      if (affirmationTimeoutRef.current) {
-        clearTimeout(affirmationTimeoutRef.current)
-        affirmationTimeoutRef.current = null
-      }
-
-      setIsAffirmationPlaying(false)
       setIsPlaying(false)
       isPlayingRef.current = false
       onPlayStateChange(false)
@@ -205,11 +188,6 @@ export default function EnhancedAudioPlayer({
       setIsLoading(false)
     }
 
-    // Initialize speech synthesis
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      speechSynthesisRef.current = window.speechSynthesis
-    }
-
     // Clean up
     return () => {
       audio.removeEventListener("loadedmetadata", setAudioData)
@@ -219,19 +197,8 @@ export default function EnhancedAudioPlayer({
       audio.pause()
       audio.src = ""
 
-      // Stop speech synthesis
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel()
-      }
-
-      // Clear any timers
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
-
-      if (affirmationTimeoutRef.current) {
-        clearTimeout(affirmationTimeoutRef.current)
-      }
+      // Stop all affirmations
+      stopAllAffirmations();
     }
   }, [audioUrl, autoPlay, onError, onPlayStateChange, volume, isMuted])
 
@@ -302,65 +269,7 @@ export default function EnhancedAudioPlayer({
     }
   }, [audioUrl])
 
-  // Test if speech synthesis works
-  const testSpeechSynthesis = () => {
-    if (!speechSynthesisRef.current) return
 
-    try {
-      // Create a test utterance with a short text
-      const testUtterance = new SpeechSynthesisUtterance("Test")
-
-      // Timeout for the test (5 seconds)
-      let testTimeout = null
-
-      // Set up event handlers
-      testUtterance.onstart = () => {
-        console.log("Speech synthesis test started")
-        // Clear timeout if speech starts
-        if (testTimeout) {
-          clearTimeout(testTimeout)
-        }
-      }
-
-      testUtterance.onend = () => {
-        console.log("Speech synthesis test successful")
-        if (testTimeout) {
-          clearTimeout(testTimeout)
-        }
-      }
-
-      testUtterance.onerror = (e) => {
-        console.log("Speech synthesis test failed:", e?.error || "Unknown error")
-        if (testTimeout) {
-          clearTimeout(testTimeout)
-        }
-      }
-
-      // Cancel any ongoing speech
-      speechSynthesisRef.current.cancel()
-
-      // Set a timeout to catch cases where the speech never starts or ends
-      testTimeout = setTimeout(() => {
-        console.log("Speech synthesis test timed out")
-        // Cancel the test utterance
-        speechSynthesisRef.current.cancel()
-      }, 5000)
-
-      // Speak the test utterance with a delay
-      setTimeout(() => {
-        try {
-          speechSynthesisRef.current.speak(testUtterance)
-        } catch (err) {
-          console.error("Error during test speech:", err)
-          if (testTimeout) {
-            clearTimeout(testTimeout)
-          }
-        }
-      }, 300)
-    } catch (error) {
-      console.error("Speech synthesis initialization failed:", error)
-    }
-  }
 
   // Stop everything when voice settings change
   useEffect(() => {
@@ -406,15 +315,8 @@ export default function EnhancedAudioPlayer({
       frequencyAudioRef.current.currentTime = 0
     }
 
-    // Stop speech synthesis
-    if (speechSynthesisRef.current) {
-      speechSynthesisRef.current.cancel()
-    }
-
-    // Clear any timers
-    if (affirmationTimerRef.current) {
-      clearTimeout(affirmationTimerRef.current)
-    }
+    // Stop all affirmations
+    stopAllAffirmations();
 
     setIsPlaying(false)
     setIsAffirmationPlaying(false)
@@ -458,164 +360,224 @@ export default function EnhancedAudioPlayer({
   }
 
   const startAffirmations = () => {
-    if (!speechSynthesisRef.current || !affirmations.length || disableAffirmations) return
-    // Cancel any ongoing speech first
-    speechSynthesisRef.current.cancel()
+    if (!affirmations.length || disableAffirmations || isSeekingRef.current) return;
+    
+    // Stop any current affirmations first
+    stopAllAffirmations();
 
-    // Clear any existing timer
-    if (affirmationTimerRef.current) {
-      clearTimeout(affirmationTimerRef.current)
-    }
-
-    // Start with the first affirmation
-    speakAffirmation(affirmations[0], 0)
+    // Start with the first affirmation after a small delay
+    setTimeout(() => {
+      if (isPlayingRef.current && !isSeekingRef.current) {
+        speakAffirmation(affirmations[0], 0);
+      }
+    }, 100);
   }
 
-  const speakAffirmation = async (text, index) => {
-    if (!isPlayingRef.current || disableAffirmations) return;
+  // Current playing affirmation audio reference
+  const currentAffirmationAudioRef = useRef(null);
+  const isSeekingRef = useRef(false);
+  const lastSeekTimeRef = useRef(0);
+  const currentAbortControllerRef = useRef(null); // For cancelling ChatGPT requests
 
-    // If ChatGPT voice → fetch TTS audio
+  const stopAllAffirmations = () => {
+    // Cancel any ongoing ChatGPT TTS request
+    if (currentAbortControllerRef.current) {
+      currentAbortControllerRef.current.abort();
+      currentAbortControllerRef.current = null;
+    }
+    
+    // Stop any current affirmation audio immediately
+    if (currentAffirmationAudioRef.current) {
+      currentAffirmationAudioRef.current.pause();
+      currentAffirmationAudioRef.current.currentTime = 0; // Reset to beginning
+      currentAffirmationAudioRef.current.src = "";
+      currentAffirmationAudioRef.current = null;
+    }
+    
+    // Also stop preloaded affirmation if it exists
+    if (preloadedAffirmationAudioRef.current) {
+      preloadedAffirmationAudioRef.current.pause();
+      preloadedAffirmationAudioRef.current.currentTime = 0; // Reset to beginning
+      preloadedAffirmationAudioRef.current.src = "";
+      preloadedAffirmationAudioRef.current = null;
+    }
+    
+    // Clear all timers
+    if (affirmationTimerRef.current) {
+      clearTimeout(affirmationTimerRef.current);
+      affirmationTimerRef.current = null;
+    }
+    
+    if (affirmationTimeoutRef.current) {
+      clearTimeout(affirmationTimeoutRef.current);
+      affirmationTimeoutRef.current = null;
+    }
+    
+    setIsAffirmationPlaying(false);
+  };
+
+  const speakAffirmation = async (text, index) => {
+    // Check if we should stop (paused, seeking, etc.)
+    if (!isPlayingRef.current || disableAffirmations || isSeekingRef.current) {
+      return;
+    }
+
+    // Stop any current affirmations before starting new one
+    stopAllAffirmations();
+
+    // Only use ChatGPT voices now
     if (voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
       try {
         // If we already preloaded this first affirmation, use it
         if (preloadedAffirmationAudioRef.current && index === 0) {
-          const audio = preloadedAffirmationAudioRef.current
-          preloadedAffirmationAudioRef.current = null
+          const audio = preloadedAffirmationAudioRef.current;
+          preloadedAffirmationAudioRef.current = null;
+          currentAffirmationAudioRef.current = audio;
+          
           audio.onplay = () => {
+            // Check if main audio is still playing before starting affirmation
+            if (!isPlayingRef.current || !audioRef.current || audioRef.current.paused) {
+              audio.pause();
+              return;
+            }
             setCurrentAffirmationIndex(index);
             setIsAffirmationPlaying(true);
           };
+          
           audio.onended = () => {
             setIsAffirmationPlaying(false);
-            // if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
-            //   setTimeout(() => {
-            //     speakAffirmation(affirmations[index + 1], index + 1);
-            //   }, 1000);
-            // } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-            //   if (repetitionInterval > 0) {
-            //     affirmationTimerRef.current = setTimeout(() => {
-            //       speakAffirmation(affirmations[0], 0);
-            //     }, repetitionInterval * 1000);
-            //   }
-            // }
-             const hasMore = index < affirmations.length - 1;
-            if (isPlayingRef.current && !disableAffirmations && audioRef.current && !audioRef.current.ended) {
+            currentAffirmationAudioRef.current = null;
+            
+            // Only continue if still playing and not seeking and main audio is still playing
+            if (!isPlayingRef.current || disableAffirmations || isSeekingRef.current || 
+                !audioRef.current || audioRef.current.paused || audioRef.current.ended) {
+              return;
+            }
+            
+            const hasMore = index < affirmations.length - 1;
+            if (audioRef.current && !audioRef.current.ended) {
               if (hasMore) {
-                // Play next affirmation
-                setTimeout(() => speakAffirmation(affirmations[index + 1], index + 1), 1000);
+                setTimeout(() => {
+                  if (isPlayingRef.current && !isSeekingRef.current) {
+                    speakAffirmation(affirmations[index + 1], index + 1);
+                  }
+                }, 1000);
               } else {
-                // Restart from first affirmation
-                const delay = repetitionInterval > 0 ? repetitionInterval * 1000 : 1000;
+                // Restart from first affirmation (applies to both single and multiple affirmations)
+                const delay = repetitionInterval > 0 ? repetitionInterval * 1000 : 10000;
                 affirmationTimerRef.current = setTimeout(() => {
-                  speakAffirmation(affirmations[0], 0);
+                  if (isPlayingRef.current && !isSeekingRef.current && audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+                    speakAffirmation(affirmations[0], 0);
+                  }
                 }, delay);
               }
             }
           };
+          
           audio.onerror = (err) => {
             console.error("ChatGPT TTS audio error (preloaded):", err);
             setIsAffirmationPlaying(false);
+            currentAffirmationAudioRef.current = null;
           };
-          audio.play();
+          
+          // Only play if still in playing state
+          if (isPlayingRef.current && !isSeekingRef.current) {
+            audio.play().catch(err => {
+              console.error("Failed to play preloaded affirmation:", err);
+            });
+          }
           return;
         }
+        
+        // Create AbortController for this request
+        const abortController = new AbortController();
+        currentAbortControllerRef.current = abortController;
+        
         const resp = await fetch("/api/chatgpt-tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             text,
-            voice: voiceSettings.voice, // friendly name
+            voice: voiceSettings.voice,
           }),
+          signal: abortController.signal, // Add abort signal
         });
+
+        // Clear the abort controller after successful request
+        currentAbortControllerRef.current = null;
 
         if (!resp.ok) throw new Error("ChatGPT TTS failed");
 
         const blob = await resp.blob();
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
+        
+        // Store reference to current affirmation audio
+        currentAffirmationAudioRef.current = audio;
 
         audio.volume = affirmationsVolume;
         audio.playbackRate = speed;
-        audio.play();
 
         audio.onplay = () => {
+          // Check if main audio is still playing before starting affirmation
+          if (!isPlayingRef.current || !audioRef.current || audioRef.current.paused) {
+            audio.pause();
+            return;
+          }
           setCurrentAffirmationIndex(index);
           setIsAffirmationPlaying(true);
         };
 
         audio.onended = () => {
           setIsAffirmationPlaying(false);
+          currentAffirmationAudioRef.current = null;
+          
+          // Only continue if still playing and not seeking and main audio is still playing
+          if (!isPlayingRef.current || disableAffirmations || isSeekingRef.current || 
+              !audioRef.current || audioRef.current.paused || audioRef.current.ended) {
+            return;
+          }
 
           // Move to next affirmation or repeat
-          if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
+          if (index < affirmations.length - 1 && audioRef.current && !audioRef.current.ended) {
             setTimeout(() => {
-              speakAffirmation(affirmations[index + 1], index + 1);
+              if (isPlayingRef.current && !isSeekingRef.current) {
+                speakAffirmation(affirmations[index + 1], index + 1);
+              }
             }, 1000);
-          } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-            if (repetitionInterval > 0) {
-              affirmationTimerRef.current = setTimeout(() => {
+          } else if (audioRef.current && !audioRef.current.ended) {
+            // Restart from first affirmation (applies to both single and multiple affirmations)
+            const delay = repetitionInterval > 0 ? repetitionInterval * 1000 : 10000;
+            affirmationTimerRef.current = setTimeout(() => {
+              if (isPlayingRef.current && !isSeekingRef.current && audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
                 speakAffirmation(affirmations[0], 0);
-              }, repetitionInterval * 1000);
-            }
+              }
+            }, delay);
           }
         };
 
         audio.onerror = (err) => {
           console.error("ChatGPT TTS audio error:", err);
           setIsAffirmationPlaying(false);
+          currentAffirmationAudioRef.current = null;
         };
-      } catch (err) {
-        console.error("ChatGPT TTS fetch error:", err);
-      }
-      return;
-    }
-
-    // --- Browser/system voice fallback ---
-    if (!speechSynthesisRef.current) return;
-    speechSynthesisRef.current.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utteranceRef.current = utterance;
-
-    // Apply selected browser voice
-    if (voiceSettings && voiceSettings.voice) {
-      const voices = speechSynthesisRef.current.getVoices();
-      const selectedVoice = voices.find((v) => v.name === voiceSettings.voice);
-      if (selectedVoice) utterance.voice = selectedVoice;
-    }
-
-    utterance.rate = speed;
-    utterance.volume = affirmationsVolume;
-
-    utterance.onstart = () => {
-      setCurrentAffirmationIndex(index);
-      setIsAffirmationPlaying(true);
-    };
-
-    utterance.onend = () => {
-      setIsAffirmationPlaying(false);
-      if (index < affirmations.length - 1 && isPlayingRef.current && !disableAffirmations) {
-        setTimeout(() => {
-          speakAffirmation(affirmations[index + 1], index + 1);
-        }, 1000);
-      } else if (isPlayingRef.current && audioRef.current && !audioRef.current.ended && !disableAffirmations) {
-        if (repetitionInterval > 0) {
-          affirmationTimerRef.current = setTimeout(() => {
-            speakAffirmation(affirmations[0], 0);
-          }, repetitionInterval * 1000);
+        
+        // Only play if still in playing state and not seeking
+        if (isPlayingRef.current && !isSeekingRef.current) {
+          audio.play().catch(err => {
+            console.error("Failed to play affirmation:", err);
+          });
         }
+      } catch (err) {
+        // Clear the abort controller
+        currentAbortControllerRef.current = null;
+        
+        // Don't log error if it was aborted (user seeked/paused)
+        if (err.name !== 'AbortError') {
+          console.error("ChatGPT TTS fetch error:", err);
+        }
+        setIsAffirmationPlaying(false);
       }
-    };
-
-    utterance.onerror = (e) => {
-      console.error("Speech synthesis error:", e);
-      setIsAffirmationPlaying(false);
-    };
-
-    try {
-      speechSynthesisRef.current.speak(utterance);
-    } catch (error) {
-      console.error("Error starting speech synthesis:", error);
     }
   };
   
@@ -703,19 +665,8 @@ export default function EnhancedAudioPlayer({
         frequencyAudioRef.current.pause()
       }
 
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel()
-      }
-
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-        affirmationTimerRef.current = null
-      }
-
-      if (affirmationTimeoutRef.current) {
-        clearTimeout(affirmationTimeoutRef.current)
-        affirmationTimeoutRef.current = null
-      }
+      // Stop all affirmations
+      stopAllAffirmations();
 
       if (previewTimeoutRef.current) {
         clearTimeout(previewTimeoutRef.current)
@@ -738,6 +689,11 @@ export default function EnhancedAudioPlayer({
     if (affirmations.length > 0 && !disableAffirmations && voiceSettings && CHATGPT_VOICE_MAP[voiceSettings.voice]) {
       try {
         setIsVoiceLoading(true)
+        
+        // Create AbortController for preloading
+        const preloadAbortController = new AbortController();
+        currentAbortControllerRef.current = preloadAbortController;
+        
         const resp = await fetch("/api/chatgpt-tts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -745,7 +701,12 @@ export default function EnhancedAudioPlayer({
             text: affirmations[0],
             voice: voiceSettings.voice,
           }),
+          signal: preloadAbortController.signal, // Add abort signal
         })
+        
+        // Clear the abort controller after successful request
+        currentAbortControllerRef.current = null;
+        
         if (!resp.ok) throw new Error("ChatGPT TTS failed")
         const blob = await resp.blob()
         const url = URL.createObjectURL(blob)
@@ -755,7 +716,13 @@ export default function EnhancedAudioPlayer({
         preloadedAffirmationAudioRef.current = audio
         firstAffirmationAudio = audio
       } catch (e) {
-        console.error("Failed to preload first affirmation:", e)
+        // Clear the abort controller
+        currentAbortControllerRef.current = null;
+        
+        // Don't log error if it was aborted
+        if (e.name !== 'AbortError') {
+          console.error("Failed to preload first affirmation:", e);
+        }
         preloadedAffirmationAudioRef.current = null
       } finally {
         // we keep loading spinner until music starts to ensure synchronized UX
@@ -785,19 +752,35 @@ export default function EnhancedAudioPlayer({
             if (firstAffirmationAudio) {
               setIsVoiceLoading(false)
               firstAffirmationAudio.onplay = () => {
+                // Check if main audio is still playing before starting affirmation
+                if (!isPlayingRef.current || !audioRef.current || audioRef.current.paused) {
+                  firstAffirmationAudio.pause();
+                  return;
+                }
                 setCurrentAffirmationIndex(0)
                 setIsAffirmationPlaying(true)
               }
               firstAffirmationAudio.onended = () => {
                 setIsAffirmationPlaying(false)
-                if (affirmations.length > 1 && isPlayingRef.current && !disableAffirmations) {
+                // Only continue if still playing and main audio is still playing
+                if (affirmations.length > 1 && isPlayingRef.current && !disableAffirmations && 
+                    audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
                   setTimeout(() => speakAffirmation(affirmations[1], 1), 1000)
+                } else if (affirmations.length === 1 && isPlayingRef.current && !disableAffirmations &&
+                          audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+                  // Handle single affirmation repetition
+                  const delay = repetitionInterval > 0 ? repetitionInterval * 1000 : 10000;
+                  affirmationTimerRef.current = setTimeout(() => {
+                    if (isPlayingRef.current && !isSeekingRef.current && audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
+                      speakAffirmation(affirmations[0], 0);
+                    }
+                  }, delay);
                 }
               }
               // Small delay to ensure music is audible first
               setTimeout(() => {
                 // Music may be paused by preview gating; only play if still playing
-                if (audioRef.current && !audioRef.current.paused) {
+                if (audioRef.current && !audioRef.current.paused && isPlayingRef.current) {
                   firstAffirmationAudio.play().catch((err) => {
                     console.error("First affirmation play error:", err)
                   })
@@ -976,89 +959,49 @@ export default function EnhancedAudioPlayer({
   }
 
 
-  // New function to start playback consistently
-  const startPlayback = () => {
-    if (!audioRef.current) return
 
-    // Prepare audio for playback
-    prepareAudio(audioRef.current)
-      .then(() => {
-        // Play music
-        const playPromise = audioRef.current.play()
-
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true)
-              isPlayingRef.current = true
-              if (onPlayStateChange) onPlayStateChange(true)
-
-              // Play affirmations only after music has started
-              if (affirmations && affirmations.length > 0 && !disableAffirmations) {
-                // Small delay to ensure music starts first
-                setTimeout(() => {
-                  // Start affirmations from the beginning
-                  speakCurrentAffirmations()
-                }, 100)
-              }
-            })
-            .catch((error) => {
-              console.error("Playback failed:", error)
-              setIsPlaying(false)
-              isPlayingRef.current = false
-              if (onPlayStateChange) onPlayStateChange(false)
-            })
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to prepare audio:", error)
-        setError(`Failed to prepare audio: ${error.message}`)
-      })
-  }
 
   // Modified handleSeek function to handle seeking properly
   const handleSeek = (e) => {
-    if (!audioRef.current || !duration) return
+    if (!audioRef.current || !duration) return;
 
     // Set seeking state to true
-    seekingRef.current = true
-    setIsSeeking(true)
+    isSeekingRef.current = true;
+    seekingRef.current = true;
+    setIsSeeking(true);
 
-    const seekTime = Number.parseFloat(e.target.value)
-    audioRef.current.currentTime = seekTime
-    setCurrentTime(seekTime)
+    const seekTime = Number.parseFloat(e.target.value);
+    lastSeekTimeRef.current = seekTime;
+    audioRef.current.currentTime = seekTime;
+    setCurrentTime(seekTime);
+
+    // Stop all affirmations immediately when seeking
+    stopAllAffirmations();
 
     // Sync frequency audio position when seeking
     if (frequencyAudioRef.current) {
-      // Calculate frequency audio position based on main audio position
-      // If frequency audio is shorter, use modulo to loop within its duration
       if (frequencyAudioRef.current.duration > 0) {
-        const frequencyPosition = seekTime % frequencyAudioRef.current.duration
-        frequencyAudioRef.current.currentTime = frequencyPosition
+        const frequencyPosition = seekTime % frequencyAudioRef.current.duration;
+        frequencyAudioRef.current.currentTime = frequencyPosition;
       }
     }
 
-    // If we're playing and have affirmations, we need to restart them
-    if (isPlaying && affirmations.length > 0 && !disableAffirmations) {
-      // Cancel any current speech
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel()
-      }
-
-      // Clear any pending timers
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
-
-      // Start speaking affirmations again
-      startAffirmations()
-    }
-
-    // Set seeking state back to false after a short delay
+    // Set seeking state back to false after a delay and restart affirmations
     setTimeout(() => {
-      seekingRef.current = false
-      setIsSeeking(false)
-    }, 100)
+      isSeekingRef.current = false;
+      seekingRef.current = false;
+      setIsSeeking(false);
+      
+      // Restart affirmations if we're still playing
+      if (isPlaying && affirmations.length > 0 && !disableAffirmations) {
+        // Wait a bit more before starting affirmations to ensure seek is complete
+        setTimeout(() => {
+          if (isPlayingRef.current && !isSeekingRef.current) {
+            startAffirmations();
+          }
+        }, 500);
+      }
+    }, 200);
   }
 
   const handleVolumeChange = (e) => {
@@ -1104,23 +1047,9 @@ export default function EnhancedAudioPlayer({
       stopEverything()
     }
 
-    // If we're currently speaking, we need to restart with the new volume
-    if (isAffirmationPlaying && speechSynthesisRef.current && !disableAffirmations) {
-      // Cancel current speech
-      speechSynthesisRef.current.cancel()
-
-      // Clear any pending timers
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
-
-      // Restart affirmations with new volume if we're playing
-      if (isPlaying) {
-        // Small delay to ensure cancellation completes
-        setTimeout(() => {
-          startAffirmations()
-        }, 1000)
-      }
+    // If we're currently speaking, update volume for current affirmation
+    if (isAffirmationPlaying && currentAffirmationAudioRef.current) {
+      currentAffirmationAudioRef.current.volume = newVolume;
     }
   }
 
@@ -1149,35 +1078,9 @@ export default function EnhancedAudioPlayer({
     return (currentTime / duration) * 100
   }
 
-  // Function to force a speech synthesis test
-  const forceTestSpeechSynthesis = () => {
-    testSpeechSynthesis()
-  }
 
-  const handleTimeUpdate = () => {
-    if (audioRef.current && !seekingRef.current) {
-      setCurrentTime(audioRef.current.currentTime)
-    }
-  }
 
-  const handleEnded = () => {
-    // Stop any ongoing affirmations when music ends
-    handleStopSpeech()
 
-    setIsPlaying(false)
-    isPlayingRef.current = false
-    onPlayStateChange(false)
-    setCurrentTime(0)
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0
-    }
-  }
-
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      setDuration(audioRef.current.duration)
-    }
-  }
 
   // Function to retry loading the audio
   const retryLoadAudio = () => {
@@ -1210,50 +1113,7 @@ export default function EnhancedAudioPlayer({
     console.log("Retrying audio load with new element")
   }
 
-  // Handle manual seeking
-  const handleSeek2 = (e) => {
-    if (!audioRef.current) return
 
-    // Set seeking state to true
-    seekingRef.current = true
-    setIsSeeking(true)
-
-    const seekTime = (e.nativeEvent.offsetX / e.target.clientWidth) * duration
-    audioRef.current.currentTime = seekTime
-    setCurrentTime(seekTime)
-
-    // Sync frequency audio position when seeking
-    if (frequencyAudioRef.current) {
-      // Calculate frequency audio position based on main audio position
-      // If frequency audio is shorter, use modulo to loop within its duration
-      if (frequencyAudioRef.current.duration > 0) {
-        const frequencyPosition = seekTime % frequencyAudioRef.current.duration
-        frequencyAudioRef.current.currentTime = frequencyPosition
-      }
-    }
-
-    // If we're playing and have affirmations, we need to restart them
-    if (isPlaying && affirmations.length > 0 && !disableAffirmations) {
-      // Cancel any current speech
-      if (speechSynthesisRef.current) {
-        speechSynthesisRef.current.cancel()
-      }
-
-      // Clear any pending timers
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
-
-      // Start speaking affirmations again
-      startAffirmations()
-    }
-
-    // Set seeking state back to false after a short delay
-    setTimeout(() => {
-      seekingRef.current = false
-      setIsSeeking(false)
-    }, 100)
-  }
 
   // Handle retry when audio fails to load
   const handleRetry = () => {
@@ -1274,13 +1134,8 @@ export default function EnhancedAudioPlayer({
         cancelAnimationFrame(animationRef.current)
       }
 
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel()
-      }
-
-      if (affirmationTimerRef.current) {
-        clearTimeout(affirmationTimerRef.current)
-      }
+      // Stop all affirmations
+      stopAllAffirmations();
     }
   }, [])
 
@@ -1291,217 +1146,17 @@ export default function EnhancedAudioPlayer({
     }
   }, [musicVolume])
 
-  // Progress bar click handler
-  const handleProgressBarClick = (e) => {
-    if (!audioRef.current) return
 
-    const progressBar = progressBarRef.current
-    const rect = progressBar.getBoundingClientRect()
-    const offsetX = e.clientX - rect.left
-    const newPosition = (offsetX / rect.width) * 100
 
-    // Calculate the new time based on the percentage
-    const newTime = (audioRef.current.duration * newPosition) / 100
 
-    // Set the new time
-    audioRef.current.currentTime = newTime
-    setCurrentTime(newTime)
 
-    // If we're not already playing, start playback of both music and affirmations
-    if (!isPlaying) {
-      startPlayback()
-    } else {
-      // If we're already playing, we need to restart the affirmations at the new position
-      if (speakAffirmations && affirmations && affirmations.length > 0) {
-        handleStopSpeech()
-        const timeoutId = setTimeout(() => {
-          speakCurrentAffirmations()
-        }, 100)
-        return () => clearTimeout(timeoutId)
-      }
-    }
-  }
 
-  const handlePlayPause = () => {
-    if (!audioRef.current) return
 
-    if (isPlaying) {
-      audioRef.current.pause()
-      handleStopSpeech()
-      setIsPlaying(false)
-      if (onPlayStateChange) onPlayStateChange(false)
-    } else {
-      startPlayback()
-    }
-  }
 
-  const speakCurrentAffirmations = () => {
-    if (!affirmations || affirmations.length === 0 || !window.speechSynthesis || isPlaying) {
-      console.log("Cannot speak affirmations: conditions not met")
-      return
-    }
 
-    // Check if music is still playing, if not, don't speak
-    if (audioRef.current && (audioRef.current.ended || audioRef.current.paused)) {
-      return
-    }
 
-    // Stop any ongoing speech
-    handleStopSpeech()
 
-    // Create a new utterance
-    const utterance = new SpeechSynthesisUtterance(affirmations[currentAffirmationIndex])
 
-    // Set voice if available
-    if (voiceSettings && voiceSettings.voice) {
-      const voices = window.speechSynthesis.getVoices()
-      const selectedVoice = voices.find((voice) => voice.name === voiceSettings.voice)
-      if (selectedVoice) utterance.voice = selectedVoice
-    }
-
-    // Set volume
-    utterance.volume = affirmationsVolume
-
-    // Set rate and pitch
-    utterance.rate = speed // Slightly slower for better clarity
-    utterance.pitch = 1.0
-
-    // Store the utterance reference
-    currentUtteranceRef.current = utterance
-
-    // Set event handlers
-    utterance.onstart = () => {
-      // console.log(`Speaking affirmation: ${affirmations[currentAffirmationIndex]}`)
-      setIsAffirmationPlaying(true)
-    }
-
-    utterance.onend = () => {
-      // console.log(`Finished speaking affirmation: ${affirmations[currentAffirmationIndex]}`)
-      setIsAffirmationPlaying(false)
-
-      // Check if music is still playing
-      if (!audioRef.current || audioRef.current.ended || audioRef.current.paused) {
-        // console.log("Music stopped, stopping affirmations")
-        return
-      }
-
-      // Move to next affirmation
-      const nextIndex = (currentAffirmationIndex + 1) % affirmations.length
-
-      // If we've gone through all affirmations, mark as completed
-      if (nextIndex === 0) {
-
-        // Schedule the next round after the repetition interval
-        if (repetitionInterval > 0) {
-
-          // Clear any existing timer
-          if (affirmationTimeoutRef.current) {
-            clearTimeout(affirmationTimeoutRef.current)
-          }
-
-          affirmationTimeoutRef.current = setTimeout(() => {
-            // Double check if music is still playing
-            if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-              setCurrentAffirmationIndex(0) // Reset to first affirmation
-              speakCurrentAffirmations()
-            }
-          }, repetitionInterval * 1000)
-        }
-      } else {
-        // If we haven't completed all affirmations yet, continue to the next one
-        setCurrentAffirmationIndex(nextIndex)
-
-        // Small delay between affirmations
-        setTimeout(() => {
-          // Check again if music is still playing
-          if (audioRef.current && !audioRef.current.paused && !audioRef.current.ended) {
-            speakCurrentAffirmations()
-          }
-        }, 500)
-      }
-    }
-
-    utterance.onerror = (e) => {
-      console.error("Speech synthesis error:", e)
-      setIsAffirmationPlaying(false)
-    }
-
-    // Start speaking
-    try {
-      window.speechSynthesis.speak(utterance)
-    } catch (error) {
-      console.error("Error starting speech synthesis:", error)
-    }
-  }
-
-  // Function to sync affirmations with current music position
-  const syncAffirmationsWithMusic = (currentMusicTime) => {
-    if (!isPlaying || !affirmations || affirmations.length === 0) return
-
-    // Stop current speech
-    handleStopSpeech()
-
-    // If we're playing, restart affirmations
-    if (isPlaying) {
-      const timeoutId = setTimeout(() => {
-        speakCurrentAffirmations()
-      }, 100)
-      return () => clearTimeout(timeoutId)
-    }
-  }
-
-  // Update time display and progress bar
-  useEffect(() => {
-    if (!audioRef.current) return
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(audioRef.current.currentTime)
-
-      // Check if we need to sync affirmations after a seek operation
-      if (Math.abs(lastSeekTime.current - audioRef.current.currentTime) > 1) {
-        syncSpeechWithAudio(
-          audioRef.current.currentTime,
-          speakCurrentAffirmations,
-          handleStopSpeech,
-          isPlaying,
-          affirmations,
-          currentAffirmationIndex,
-          repetitionInterval,
-          setCurrentAffirmationIndex,
-          affirmationTimeoutRef,
-        )
-        lastSeekTime.current = audioRef.current.currentTime
-      }
-    }
-
-    audioRef.current.addEventListener("timeupdate", handleTimeUpdate)
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener("timeupdate", handleTimeUpdate)
-      }
-    }
-  }, [])
-
-  // Use the imported stopSpeech but also clear our timeout
-  const handleStopSpeech = () => {
-    // Cancel any ongoing speech
-    if (speechSynthesisRef.current) {
-      speechSynthesisRef.current.cancel()
-    }
-
-    // Clear all timers
-    if (affirmationTimerRef.current) {
-      clearTimeout(affirmationTimerRef.current)
-      affirmationTimerRef.current = null
-    }
-
-    if (affirmationTimeoutRef.current) {
-      clearTimeout(affirmationTimeoutRef.current)
-      affirmationTimeoutRef.current = null
-    }
-
-    setIsAffirmationPlaying(false)
-  }
 
   return (
     <div className="w-full">

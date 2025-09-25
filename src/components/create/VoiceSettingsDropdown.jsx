@@ -85,6 +85,7 @@ export default function VoiceSettingsDropdown({
   formData,
   updateFormData,
   affirmations = [],
+  onStopAudio, // Add this prop to allow parent to stop audio
 }) {
   const [availableVoices, setAvailableVoices] = useState([]);
   const [mappedVoices, setMappedVoices] = useState([]);
@@ -94,6 +95,7 @@ export default function VoiceSettingsDropdown({
   const [generatingVoiceId, setGeneratingVoiceId] = useState(null);
   const [testMessage, setTestMessage] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState(null); // Track current audio instance
 
   const voices = [...CHATGPT_VOICES].sort((a, b) => a.priority - b.priority);
 
@@ -103,6 +105,24 @@ export default function VoiceSettingsDropdown({
   }
 
 
+  // Function to stop current audio
+  const stopCurrentAudio = () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      setCurrentAudio(null);
+    }
+    setIsPlaying(false);
+    setPlayingVoiceId(null);
+  };
+
+  // Expose stop function to parent component
+  useEffect(() => {
+    if (onStopAudio) {
+      onStopAudio.current = stopCurrentAudio;
+    }
+  }, [onStopAudio, currentAudio]);
+
   // Test the voice with the first affirmation
   const testVoice = async (voiceId) => {
     const selectedId = voiceId || formData.voiceType;
@@ -110,6 +130,9 @@ export default function VoiceSettingsDropdown({
 
     const voice = voices.find((v) => v.id === selectedId);
     if (!voice) return;
+
+    // Stop any currently playing audio
+    stopCurrentAudio();
 
     let testText =
       affirmations && affirmations.length > 0
@@ -134,6 +157,8 @@ export default function VoiceSettingsDropdown({
       const audioURL = URL.createObjectURL(audioBlob);
 
       const audio = new Audio(audioURL);
+      setCurrentAudio(audio); // Store the audio instance
+      
       audio.onplay = () => {
         setIsGenerating(false);
         setGeneratingVoiceId(null);
@@ -143,12 +168,14 @@ export default function VoiceSettingsDropdown({
       audio.onended = () => {
         setIsPlaying(false);
         setPlayingVoiceId(null);
+        setCurrentAudio(null);
       };
       audio.onerror = () => {
         setIsGenerating(false);
         setGeneratingVoiceId(null);
         setIsPlaying(false);
         setPlayingVoiceId(null);
+        setCurrentAudio(null);
       };
 
       audio.play();
@@ -158,6 +185,7 @@ export default function VoiceSettingsDropdown({
       setGeneratingVoiceId(null);
       setIsPlaying(false);
       setPlayingVoiceId(null);
+      setCurrentAudio(null);
     }
   };
 
@@ -232,9 +260,9 @@ export default function VoiceSettingsDropdown({
                       className="text-gray-400 hover:text-gray-600 p-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        testVoice(voice.value);
+                        testVoice(voice.id);
                       }}
-                      disabled={isPlaying}
+                      disabled={isGenerating}
                     >
                       {isPlaying && playingVoiceId === voice.id ? (
                         <div className="animate-pulse flex space-x-1">

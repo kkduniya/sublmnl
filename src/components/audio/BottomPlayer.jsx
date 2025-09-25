@@ -60,6 +60,8 @@ const BottomPlayer = forwardRef(
     const affirmationTimerRef = useRef(null)
     const affirmationTimeoutRef = useRef(null)
     const activeAffirmationAudioRef = useRef(null);
+    const currentAbortControllerRef = useRef(null); // For cancelling ChatGPT requests
+    const isSeekingRef = useRef(false); // Track seeking state
 
     const isAdmin = user?.role === "admin"
 
@@ -100,6 +102,12 @@ const BottomPlayer = forwardRef(
         // Clean up speech synthesis
         if (speechSynthesisRef.current) {
           speechSynthesisRef.current.cancel()
+        }
+
+        // Cancel any ongoing ChatGPT TTS request
+        if (currentAbortControllerRef.current) {
+          currentAbortControllerRef.current.abort();
+          currentAbortControllerRef.current = null;
         }
 
         // Clear any timers
@@ -152,36 +160,38 @@ const BottomPlayer = forwardRef(
       getDuration: () => duration,
     }))
 
-    // Handle play/pause state changes
+    // Separate effect to handle play/pause without resetting position
     useEffect(() => {
-      if (audioRef.current) {
-        if (isPlaying) {
-          audioRef.current.play().catch((error) => {
-            console.error("Error playing audio:", error)
+      if (!audioRef.current) return;
+      
+      if (isPlaying) {
+        // Resume from current position
+        audioRef.current.play().catch((error) => {
+          console.error("Error playing audio:", error)
+        })
+        
+        // Resume frequency audio from synced position
+        if (frequencyAudioRef.current && frequencyUrl) {
+          frequencyAudioRef.current.play().catch((error) => {
+            console.error("Error playing frequency audio:", error)
           })
-
-          // Start frequency audio if available
-          if (frequencyAudioRef.current && frequencyUrl) {
-            frequencyAudioRef.current.play().catch((error) => {
-              console.error("Error playing frequency audio:", error)
-            })
-          }
-
-          // Start affirmations if we have them
-          if (affirmations.length > 0) {
-            startAffirmations()
-          }
-        } else {
-          audioRef.current.pause()
-          if (frequencyAudioRef.current) {
-            frequencyAudioRef.current.pause()
-          }
-          stopAffirmations() 
         }
+        
+        // Start affirmations if we have them
+        if (affirmations.length > 0) {
+          startAffirmations()
+        }
+      } else {
+        // Pause without resetting position
+        audioRef.current.pause()
+        if (frequencyAudioRef.current) {
+          frequencyAudioRef.current.pause()
+        }
+        stopAffirmations()
       }
-    }, [isPlaying, audioUrl, affirmations, frequencyUrl])
+    }, [isPlaying]) // Only depend on play state
 
-    // Reset audio when URL changes
+    // Reset audio when URL changes (but not on play/pause)
     useEffect(() => {
       if (audioRef.current) {
         audioRef.current.currentTime = 0
@@ -204,7 +214,9 @@ const BottomPlayer = forwardRef(
           })
         }
       }
-    }, [audioUrl, frequencyUrl, isPlaying])
+    }, [audioUrl, frequencyUrl]) // Remove isPlaying from dependencies
+
+
 
     // Initialize audio
     useEffect(() => {
@@ -332,6 +344,12 @@ const BottomPlayer = forwardRef(
 
     // Function to stop affirmations
     const stopAffirmations = () => {
+      // Cancel any ongoing ChatGPT TTS request
+      if (currentAbortControllerRef.current) {
+        currentAbortControllerRef.current.abort();
+        currentAbortControllerRef.current = null;
+      }
+      
       if (speechSynthesisRef.current) {
         speechSynthesisRef.current.cancel();
       }
@@ -351,6 +369,7 @@ const BottomPlayer = forwardRef(
 
       if (activeAffirmationAudioRef.current) {
         activeAffirmationAudioRef.current.pause();
+        activeAffirmationAudioRef.current.currentTime = 0; // Reset to beginning
         activeAffirmationAudioRef.current.src = "";
         activeAffirmationAudioRef.current = null;
       }
@@ -361,11 +380,17 @@ const BottomPlayer = forwardRef(
 
     // Function to speak an affirmation
     const speakAffirmation = async (text, index) => {
-      if (!isPlaying) return;
+      if (!isPlaying || isSeekingRef.current) return;
+      
       const selectedVoice = voiceSettings?.voice || voiceSettings?.voiceType;
+      
       // --- ChatGPT voice branch ---
       if (selectedVoice && CHATGPT_VOICE_MAP[selectedVoice]) {
         try {
+          // Create AbortController for this request
+          const abortController = new AbortController();
+          currentAbortControllerRef.current = abortController;
+          
           const resp = await fetch("/api/chatgpt-tts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -373,18 +398,24 @@ const BottomPlayer = forwardRef(
               text,
               voice: selectedVoice, // friendly name like "breeze"
             }),
+            signal: abortController.signal, // Add abort signal
           });
+
+          // Clear the abort controller after successful request
+          currentAbortControllerRef.current = null;
 
           if (!resp.ok) throw new Error("ChatGPT TTS failed");
 
           const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
+          
           // Stop any existing affirmation audio first
           if (activeAffirmationAudioRef.current) {
             activeAffirmationAudioRef.current.pause();
             activeAffirmationAudioRef.current.src = "";
             activeAffirmationAudioRef.current = null;
           }
+          
           const audio = new Audio(url);
 
           audio.volume = affirmationsVolume;
@@ -394,27 +425,63 @@ const BottomPlayer = forwardRef(
           activeAffirmationAudioRef.current = audio; 
 
           audio.onplay = () => {
+            // Check if main audio is still playing before starting affirmation
+            if (!isPlaying || !audioRef.current || audioRef.current.paused || isSeekingRef.current) {
+              audio.pause();
+              return;
+            }
             setCurrentAffirmationIndex(index);
             setIsAffirmationPlaying(true);
           };
+          
           audio.onended = () => {
             setIsAffirmationPlaying(false);
+            activeAffirmationAudioRef.current = null;
+            
+            // Only continue if still playing and not seeking and main audio is still playing
+            if (!isPlaying || isSeekingRef.current || !audioRef.current || 
+                audioRef.current.paused || audioRef.current.ended) {
+              return;
+            }
 
-            if (index < affirmations.length - 1 && isPlaying) {
+            if (index < affirmations.length - 1) {
               affirmationTimeoutRef.current = setTimeout(() => {
-                speakAffirmation(affirmations[index + 1], index + 1);
+                if (isPlaying && !isSeekingRef.current) {
+                  speakAffirmation(affirmations[index + 1], index + 1);
+                }
               }, 1000);
-            } else if (isPlaying && audioRef.current && !audioRef.current.ended) {
+            } else if (audioRef.current && !audioRef.current.ended) {
               if (repetitionInterval > 0) {
                 affirmationTimerRef.current = setTimeout(() => {
-                  speakAffirmation(affirmations[0], 0);
+                  if (isPlaying && !isSeekingRef.current && audioRef.current && 
+                      !audioRef.current.paused && !audioRef.current.ended) {
+                    speakAffirmation(affirmations[0], 0);
+                  }
                 }, repetitionInterval * 1000);
               }
             }
           };
-          audio.play();
+          
+          audio.onerror = (err) => {
+            console.error("ChatGPT TTS audio error:", err);
+            setIsAffirmationPlaying(false);
+            activeAffirmationAudioRef.current = null;
+          };
+          
+          // Only play if still in playing state and not seeking
+          if (isPlaying && !isSeekingRef.current) {
+            audio.play().catch(err => {
+              console.error("Failed to play affirmation:", err);
+            });
+          }
         } catch (err) {
-          console.error("ChatGPT TTS error:", err);
+          // Clear the abort controller
+          currentAbortControllerRef.current = null;
+          
+          // Don't log error if it was aborted (user seeked/paused)
+          if (err.name !== 'AbortError') {
+            console.error("ChatGPT TTS error:", err);
+          }
           setIsAffirmationPlaying(false);
         }
         return;
@@ -444,21 +511,37 @@ const BottomPlayer = forwardRef(
       utterance.volume = affirmationsVolume;
 
       utterance.onstart = () => {
+        // Check if main audio is still playing before starting affirmation
+        if (!isPlaying || !audioRef.current || audioRef.current.paused || isSeekingRef.current) {
+          speechSynthesisRef.current.cancel();
+          return;
+        }
         setCurrentAffirmationIndex(index);
         setIsAffirmationPlaying(true);
       };
 
       utterance.onend = () => {
         setIsAffirmationPlaying(false);
+        
+        // Only continue if still playing and not seeking and main audio is still playing
+        if (!isPlaying || isSeekingRef.current || !audioRef.current || 
+            audioRef.current.paused || audioRef.current.ended) {
+          return;
+        }
 
-        if (index < affirmations.length - 1 && isPlaying) {
+        if (index < affirmations.length - 1) {
           affirmationTimeoutRef.current = setTimeout(() => {
-            speakAffirmation(affirmations[index + 1], index + 1);
+            if (isPlaying && !isSeekingRef.current) {
+              speakAffirmation(affirmations[index + 1], index + 1);
+            }
           }, 1000);
-        } else if (isPlaying && audioRef.current && !audioRef.current.ended) {
+        } else if (audioRef.current && !audioRef.current.ended) {
           if (repetitionInterval > 0) {
             affirmationTimerRef.current = setTimeout(() => {
-              speakAffirmation(affirmations[0], 0);
+              if (isPlaying && !isSeekingRef.current && audioRef.current && 
+                  !audioRef.current.paused && !audioRef.current.ended) {
+                speakAffirmation(affirmations[0], 0);
+              }
             }, repetitionInterval * 1000);
           }
         }
@@ -480,6 +563,9 @@ const BottomPlayer = forwardRef(
     const handleSeek = (value) => {
       const seekTime = value[0];
       setCurrentTime(seekTime);
+      
+      // Set seeking state
+      isSeekingRef.current = true;
 
       if (audioRef.current) {
         audioRef.current.currentTime = seekTime;
@@ -491,15 +577,22 @@ const BottomPlayer = forwardRef(
         frequencyAudioRef.current.currentTime = seekTime % frequencyDuration;
       }
 
-      // Restart affirmations safely
-      if (isPlaying && affirmations.length > 0) {
-        stopAffirmations();   // 🛑 stop any old affirmations first
-        setTimeout(() => {
-          if (isPlaying) {
-            startAffirmations();
-          }
-        }, 200);
-      }
+      // Stop all affirmations immediately when seeking
+      stopAffirmations();
+      
+      // Set seeking state back to false after a delay and restart affirmations
+      setTimeout(() => {
+        isSeekingRef.current = false;
+        
+        // Restart affirmations if we're still playing
+        if (isPlaying && affirmations.length > 0) {
+          setTimeout(() => {
+            if (isPlaying && !isSeekingRef.current) {
+              startAffirmations();
+            }
+          }, 300);
+        }
+      }, 200);
     };
 
     // Format time (seconds to MM:SS)
