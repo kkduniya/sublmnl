@@ -1,35 +1,45 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { DataTable } from "@/components/ui/data-table"
+import { ServerSideDataTable } from "@/components/ui/server-side-data-table"
 
 export default function UserManagementPage() {
   const { user } = useAuth()
   const [users, setUsers] = useState([])
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPrevPage: false,
+  })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortConfig, setSortConfig] = useState({ field: "createdAt", order: "desc" })
   const router = useRouter()
 
-  useEffect(() => {
-    // Check if user is admin
-    if (user && user.role !== "admin") {
-      router.push("/dashboard")
-    }
-
-    fetchUsers()
-  }, [user, router])
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/admin/users")
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        search: searchTerm,
+        sortField: sortConfig.field,
+        sortOrder: sortConfig.order,
+      })
+
+      const response = await fetch(`/api/admin/users?${params}`)
       const data = await response.json()
 
       if (data.success) {
-        setUsers(data.users)
+        setUsers(data.data)
+        setPagination(data.pagination)
       } else {
         setError(data.message || "Failed to fetch users")
       }
@@ -39,11 +49,29 @@ export default function UserManagementPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [pagination.page, pagination.limit, searchTerm, sortConfig.field, sortConfig.order])
+
+  useEffect(() => {
+    // Check if user is admin
+    if (user && user.role !== "admin") {
+      router.push("/dashboard")
+    }
+  }, [user, router])
+
+  useEffect(() => {
+    if (user && user.role === "admin") {
+      // Debounce search
+      const timeoutId = setTimeout(() => {
+        fetchUsers()
+      }, 300)
+
+      return () => clearTimeout(timeoutId)
+    }
+  }, [fetchUsers, user])
 
   const handleToggleAdmin = async (userId, isCurrentlyAdmin) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/api/admin/users?id=${userId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -64,6 +92,23 @@ export default function UserManagementPage() {
       setError("An error occurred while updating user role")
       console.error(error)
     }
+  }
+
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }))
+  }
+
+  const handleSearch = (term) => {
+    setSearchTerm(term)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page on search
+  }
+
+  const handleSort = (field) => {
+    setSortConfig(prev => ({
+      field,
+      order: prev.field === field && prev.order === "asc" ? "desc" : "asc"
+    }))
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page on sort
   }
 
   // Define columns for the DataTable
@@ -112,12 +157,12 @@ export default function UserManagementPage() {
           >
             {user.role === "admin" ? "Remove Admin" : "Make Admin"}
           </button>
-          <Link
+          {/* <Link
             href={`/dashboard/users/${user._id}`}
             className="px-3 py-1 bg-gray-700/50 hover:bg-gray-700 rounded-md text-sm"
           >
             View Details
-          </Link>
+          </Link> */}
         </div>
       ),
     },
@@ -149,12 +194,16 @@ export default function UserManagementPage() {
         </div>
       ) : (
         <div className="glass-card p-6">
-          <DataTable
+          <ServerSideDataTable
             data={users}
             columns={columns}
             keyExtractor={(user) => user._id}
-            searchKeys={["firstName", "lastName", "email", "role"]}
-            pageSize={10}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onSearch={handleSearch}
+            onSort={handleSort}
+            sortConfig={sortConfig}
+            isLoading={isLoading}
           />
         </div>
       )}

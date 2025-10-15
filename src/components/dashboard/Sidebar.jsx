@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import Image from "next/image";
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname();
@@ -17,11 +17,22 @@ export default function Sidebar() {
   const fullPath = `${pathname}${searchParams.toString() ? "?" + searchParams.toString() : ""}`;
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+    }
     checkMobile()
     window.addEventListener("resize", checkMobile)
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
+
+  // Handle mobile sidebar close on navigation
+  const handleMobileNavigation = (href) => {
+    if (isMobile && isOpen) {
+      onClose?.()
+    }
+    // Let the Link handle the navigation
+  }
 
   // Check if user is admin - adjust based on your user structure
   const isAdmin = user?.role === "admin"
@@ -235,13 +246,35 @@ export default function Sidebar() {
 
   // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter((item) => item.forAll || (item.forAdmin && isAdmin))
+  
+  // Don't render sidebar on mobile if it's not open
+  if (isMobile && !isOpen) {
+    return null
+  }
+
   return (
-    <div className={`h-screen bg-gray-900 text-white transition-all duration-300 overflow-auto  ${isCollapsed ? "w-20" : "w-64"}`}
-      style={{
-        scrollbarWidth: "none"
-      }}>
+    <>
+      {/* Mobile Overlay */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div className={`
+        h-screen bg-gray-900 text-white transition-all duration-300 overflow-auto z-[100]
+        ${isMobile 
+          ? 'fixed top-0 left-0 z-50 w-64 transform transition-transform duration-300 translate-x-0' 
+          : `relative ${isCollapsed ? "w-20" : "w-64"}`
+        }
+      `}
+        style={{
+          scrollbarWidth: "none"
+        }}>
       <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        {!isCollapsed && <div className="text-xl font-bold text-primary">
+        {(!isCollapsed || isMobile) && <div className="text-xl font-bold text-primary">
           <Image
             src={"/images/logowhiteNew.png"}
             alt="Logo"
@@ -253,31 +286,52 @@ export default function Sidebar() {
             }}
             onClick={() => router.push("/")}
           />
-
         </div>}
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-md hover:bg-gray-800">
-          {isCollapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
+        
+        <div className="flex items-center space-x-2">
+          {/* Mobile close button */}
+          {isMobile && (
+            <button 
+              onClick={onClose} 
+              className="p-2 rounded-md hover:bg-gray-800 md:hidden"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
           )}
-        </button>
+          
+          {/* Desktop collapse button */}
+          {!isMobile && (
+            <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-md hover:bg-gray-800">
+              {isCollapsed ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path
+                    fillRule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="py-4">
-        {isAdmin && !isCollapsed && (
+        {isAdmin && (!isCollapsed || isMobile) && (
           <div className="px-4 py-2 mb-4 bg-primary/20 text-sm rounded-md mx-4">Admin Dashboard</div>
         )}
 
@@ -287,20 +341,26 @@ export default function Sidebar() {
               {item.href ? (
                 <Link
                   href={item.href}
-                  className={`flex items-center px-4 py-3  transition-colors ${isCollapsed ? "justify-center" : "space-x-3"
+                  onClick={() => handleMobileNavigation(item.href)}
+                  className={`flex items-center px-4 py-3  transition-colors ${(isCollapsed && !isMobile) ? "justify-center" : "space-x-3"
                     } ${fullPath === item.href ? "bg-white/20" : "hover:bg-gray-800"} `}
                 >
                   <span className="text-gray-300">{item.icon}</span>
-                  {!isCollapsed && <span>{item.title}</span>}
+                  {(!isCollapsed || isMobile) && <span>{item.title}</span>}
                 </Link>
               ) : (
                 <button
-                  onClick={item.action}
-                  className={`flex items-center px-4 py-3 hover:bg-gray-800 transition-colors w-full ${isCollapsed ? "justify-center" : "space-x-3"
+                  onClick={() => {
+                    if (isMobile && isOpen) {
+                      onClose?.()
+                    }
+                    item.action()
+                  }}
+                  className={`flex items-center px-4 py-3 hover:bg-gray-800 transition-colors w-full ${(isCollapsed && !isMobile) ? "justify-center" : "space-x-3"
                     }`}
                 >
                   <span className="text-gray-300">{item.icon}</span>
-                  {!isCollapsed && <span>{item.title}</span>}
+                  {(!isCollapsed || isMobile) && <span>{item.title}</span>}
                 </button>
               )}
             </li>
@@ -308,12 +368,12 @@ export default function Sidebar() {
         </ul>
       </div>
 
-      <div className="absolute1 bottom-0 w-full border-t border-gray-800 p-4 bg-[#1d4f59] mb-20">
-        <div className={`flex ${isCollapsed ? "justify-center" : "items-center space-x-3"}`}>
+      <div className="w-full border-t border-gray-800 p-4 bg-[#1d4f59] mb-20">
+        <div className={`flex ${(isCollapsed && !isMobile) ? "justify-center" : "items-center space-x-3"}`}>
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
             {getUserInitials()}
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || isMobile) && (
             <div className="overflow-hidden">
               <div className="font-medium truncate">{getUserDisplayName()}</div>
               <div className="text-sm text-gray-400">
@@ -324,6 +384,7 @@ export default function Sidebar() {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

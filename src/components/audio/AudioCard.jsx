@@ -89,7 +89,7 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
   return (
     <div
       className={cn(
-        "flex items-center p-3 rounded-lg transition-colors",
+        "flex items-start sm:items-center p-3 rounded-lg transition-colors",
         isActive ? "bg-gray-800/50" : "hover:bg-gray-800/30",
       )}
     >
@@ -131,54 +131,12 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
           <span>{formatDate(audio.createdAt)}</span>
           <span className="mx-2">•</span>
           <span>{audio.category || "General"}</span>
-          <span className="mx-2">•</span>
-          <span>{audio?.voiceName ? audio?.voiceName : audio?.voiceType}</span>
+          <span className="mx-2 hidden sm:inline">•</span>
+          <span className="hidden sm:inline">{audio?.voiceName ? audio?.voiceName : audio?.voiceType}</span>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full h-9 w-9 hover:bg-gray-700/50"
-          onClick={onPlay}
-          aria-label={isPlaying ? "Pause" : "Play"}
-        >
-          {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-        </Button> */}
-
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full h-9 w-9 hover:bg-gray-700/50"
-          onClick={onDownload}
-          aria-label="Download"
-        >
-          <Download className="h-4 w-4" />
-        </Button> */}
-
-        {/* <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full h-9 w-9 hover:bg-gray-700/50"
-              aria-label="More options"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-gray-900 border-gray-800">
-            <DropdownMenuItem onClick={onDownload} className="text-gray-300 hover:text-white">
-              Download
-            </DropdownMenuItem>
-            {onDelete && (
-              <DropdownMenuItem className="text-red-400 hover:text-red-300" onClick={onDelete}>
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu> */}
         <button onClick={handleDeleteClick} className="p-1 rounded hover:bg-red-900/30" aria-label="Delete audio">
           <Trash2 className="h-5 w-5 text-red-400 hover:text-red-600" />
         </button>

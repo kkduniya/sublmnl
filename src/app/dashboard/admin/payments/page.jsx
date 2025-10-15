@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function AdminPaymentsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:p-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Payments</h1>
         <p className="text-muted-foreground">Manage and view all payment transactions</p>

@@ -207,15 +207,18 @@ export async function POST(req) {
             }),
           });
 
-          // If subscription is canceled, update user's subscription status
-          if (subscription.status === 'canceled') {
-            const existingSubscription = await findSubscriptionByStripeId(subscription.id);
-            if (existingSubscription) {
-              await updateUser(existingSubscription.userId, {
-                hasActiveSubscription: false,
-                subscription: 'free'
-              });
-            }
+          // Update user's subscription status based on subscription status
+          const existingSubscription = await findSubscriptionByStripeId(subscription.id);
+          if (existingSubscription) {
+            const isActive = subscription.status === 'active' && 
+                           new Date(subscription.current_period_end * 1000) > new Date();
+            
+            await updateUser(existingSubscription.userId, {
+              hasActiveSubscription: isActive,
+              subscription: isActive ? 'premium' : 'free'
+            });
+
+            console.log(`Updated user ${existingSubscription.userId} subscription status: ${isActive ? 'active' : 'inactive'}`);
           }
         } catch (error) {
           console.error("Error processing subscription update:", error);
@@ -237,6 +240,72 @@ export async function POST(req) {
           // Update user's subscription status
           await updateUser(existingSubscription.userId, {
             hasActiveSubscription: false,
+            subscription: 'free'
+          })
+        }
+        break
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object
+        console.log("🔔 invoice.payment_failed triggered for subscription:", invoice.subscription)
+
+        if (invoice.subscription) {
+          const subscription = await findSubscriptionByStripeId(invoice.subscription)
+          
+          if (subscription) {
+            // Update subscription status to past_due
+            await updateSubscriptionByStripeId(invoice.subscription, {
+              status: "past_due"
+            })
+
+            // Update user's subscription status to inactive
+            await updateUser(subscription.userId, {
+              hasActiveSubscription: false,
+              subscription: 'free'
+            })
+
+            console.log(`Payment failed for subscription ${invoice.subscription}, user status updated to inactive`)
+          }
+        }
+        break
+      }
+
+      case "customer.subscription.paused": {
+        const subscription = event.data.object
+        console.log("🔔 customer.subscription.paused triggered")
+
+        const existingSubscription = await findSubscriptionByStripeId(subscription.id)
+        
+        if (existingSubscription) {
+          await updateSubscriptionByStripeId(subscription.id, {
+            status: "paused"
+          })
+
+          // Update user's subscription status to inactive
+          await updateUser(existingSubscription.userId, {
+            hasActiveSubscription: false,
+            subscription: 'free'
+          })
+        }
+        break
+      }
+
+      case "customer.subscription.resumed": {
+        const subscription = event.data.object
+        console.log("🔔 customer.subscription.resumed triggered")
+
+        const existingSubscription = await findSubscriptionByStripeId(subscription.id)
+        
+        if (existingSubscription) {
+          await updateSubscriptionByStripeId(subscription.id, {
+            status: "active"
+          })
+
+          // Update user's subscription status to active
+          await updateUser(existingSubscription.userId, {
+            hasActiveSubscription: true,
+            subscription: 'premium'
           })
         }
         break

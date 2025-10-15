@@ -145,7 +145,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen py-12 px-6 md:px-12 flex justify-center items-center">
+    <div className="sm:min-h-screen py-12 px-6 md:px-12 flex justify-center items-center">
       <div className="max-w-4xl mx-auto w-full">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Your Profile</h1>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
 
               <div>
                 <h3 className="text-sm font-medium text-gray-400 mb-1">Subscription Plan</h3>
-                <p className="text-lg capitalize">{user.subscription || "Free"}</p>
+                <p className="text-lg capitalize">{user.subscription.toLowerCase() === "premium" ? "Sublmnl Membership" : user.subscription || "Free"}</p>
               </div>
             </div>
           )}

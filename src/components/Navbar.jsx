@@ -175,12 +175,26 @@ export default function Navbar() {
                     >
                       Profile
                     </Link>
-                    <Link
+                    {/* <Link
                       href="/dashboard"
                       className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       Dashboard
+                    </Link> */}
+                    <Link
+                      href="/dashboard/audios"
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Library
+                    </Link>
+                    <Link
+                      href="/dashboard/subscriptions"
+                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Billing and Subscription
                     </Link>
                     <button
                       onClick={handleLogout}
@@ -270,7 +284,7 @@ export default function Navbar() {
                   >
                     Create Audio
                   </Link>
-                  <Link
+                  {/* <Link
                     href="/dashboard"
                     className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/dashboard") ? "text-opacity-100" : "text-opacity-90"}`}
                     style={{ color: isActive("/dashboard") ? primaryColor : "rgb(209, 213, 219)" }}
@@ -280,7 +294,7 @@ export default function Navbar() {
                     }}
                   >
                     Dashboard
-                  </Link>
+                  </Link> */}
                   <Link
                     href="/profile"
                     className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
@@ -291,6 +305,28 @@ export default function Navbar() {
                     }}
                   >
                     Profile
+                  </Link>
+                  <Link
+                    href="/dashboard/audios"
+                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
+                    style={{ color: isActive("/profile") ? primaryColor : "rgb(209, 213, 219)" }}
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      setIsOpen(false)
+                    }}
+                  >
+                    Library
+                  </Link>
+                  <Link
+                    href="/dashboard/subscriptions"
+                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
+                    style={{ color: isActive("/profile") ? primaryColor : "rgb(209, 213, 219)" }}
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      setIsOpen(false)
+                    }}
+                  >
+                    Billing and Subscription
                   </Link>
                   <button
                     onClick={handleLogout}

@@ -153,7 +153,7 @@ export default function NewFrequencyPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto sm:p-6">
       <div className="mb-8">
         <Link
           href="/dashboard/frequency"

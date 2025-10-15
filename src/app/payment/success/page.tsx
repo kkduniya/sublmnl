@@ -43,7 +43,7 @@ export default function PaymentSuccessPage() {
   }, [searchParams, router])
 
   return (
-    <div className="container max-w-lg mx-auto py-12">
+    <div className="container max-w-lg mx-auto px-4 py-12">
       <div className="glass-card p-8 text-center">
         <div className="flex justify-center mb-6">
           <div className="rounded-full bg-green-100 p-3">

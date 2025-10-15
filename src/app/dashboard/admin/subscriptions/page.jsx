@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function AdminSubscriptionsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:p-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Subscriptions</h1>
         <p className="text-muted-foreground">Manage and view all user subscriptions</p>

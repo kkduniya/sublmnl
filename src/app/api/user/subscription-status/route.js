@@ -24,9 +24,19 @@ export async function GET(request) {
 
     await connectToDatabase();
 
-    // Check for active subscription
+    // Check for active subscription (this already validates currentPeriodEnd)
     const activeSubscription = await findActiveSubscriptionByUserId(userId);
     const hasActiveSubscription = !!activeSubscription;
+
+    // Log subscription status for debugging
+    console.log(`🔍 Subscription status check for user ${userId}:`, {
+      hasActiveSubscription,
+      activeSubscription: activeSubscription ? {
+        status: activeSubscription.status,
+        currentPeriodEnd: activeSubscription.currentPeriodEnd,
+        isExpired: activeSubscription.currentPeriodEnd < new Date()
+      } : null
+    });
 
     // Check for successful one-time payments
     const oneTimePayments = await findSuccessfulPaymentsByUserId(userId);

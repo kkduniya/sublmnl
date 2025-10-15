@@ -53,12 +53,14 @@ export async function GET(request) {
 
     return NextResponse.json({
       success: true,
-      users: formattedUsers,
+      data: formattedUsers,
       pagination: {
         total: totalCount,
         page,
         limit,
         totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPrevPage: page > 1,
       },
     })
   } catch (error) {
@@ -74,9 +76,10 @@ export async function GET(request) {
   }
 }
 
-export async function PATCH(request, { params }) {
+export async function PATCH(request) {
   try {
-    const { id } = params
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
     const { role } = await request.json()
 
     if (!id || !role) {

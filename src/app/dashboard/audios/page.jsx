@@ -315,7 +315,7 @@ export default function UserAudiosPage() {
   const filteredAudios = activeTab === "favorites" ? audios.filter((audio) => favorites[audio.id]) : audios
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-8xl min-h-screen">
+    <div className="container mx-auto sm:px-4 sm:py-8 max-w-8xl min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">My Audio Library</h1>
         <Button

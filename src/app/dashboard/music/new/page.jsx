@@ -114,7 +114,7 @@ export default function NewMusicPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto sm:p-6">
       <div className="mb-8">
         <Link href="/dashboard/music" className="flex items-center text-primary hover:underline">
           <ArrowLeft className="h-4 w-4 mr-2" />

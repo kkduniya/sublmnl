@@ -190,14 +190,14 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+    <div className="max-w-8xl mx-auto  sm:px-6 lg:px-8  sm:py-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
           Your Dashboard
         </h1>
         <Link
           href="/create"
-          className="bg-gradient-to-r from-primary to-purple-500 rounded-md py-2 px-5 hover:opacity-90 transition-opacity text-white font-medium"
+          className="bg-gradient-to-r from-primary to-purple-500 rounded-md py-2 px-4 sm:px-5 hover:opacity-90 transition-opacity text-white font-medium text-center w-full sm:w-auto"
         >
           Create New Audio
         </Link>
@@ -207,12 +207,12 @@ export default function DashboardPage() {
         {/* Enhanced Subscription Card */}
         <Card className="lg:col-span-2 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700">
           <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-xl font-semibold flex items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+              <CardTitle className="text-lg sm:text-xl font-semibold flex items-center">
                 <CreditCardIcon className="h-5 w-5 mr-2 text-primary" />
                 Your Subscription
               </CardTitle>
-              <Link href="/dashboard/subscriptions" className="text-primary hover:underline text-sm flex items-center">
+              <Link href="/dashboard/subscriptions" className="text-primary hover:underline text-sm flex items-center self-start sm:self-auto">
                 <SettingsIcon className="h-4 w-4 mr-1" />
                 Manage
               </Link>
@@ -226,23 +226,25 @@ export default function DashboardPage() {
             ) :
               subscription && subscription?.status === "active" ?
                 <>
-                  <div className="flex items-center mb-6">
-                    <div className="h-16 w-16 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 flex items-center justify-center mr-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center mb-6 gap-4">
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-r from-primary/20 to-purple-500/20 flex items-center justify-center mx-auto sm:mx-0 sm:mr-4">
                       {subscriptionInfo.status === "active" ? (
                         <CheckCircleIcon className="h-8 w-8 text-green-400" />
                       ) : (
                         <AlertCircleIcon className="h-8 w-8 text-gray-400" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <span className="text-2xl font-bold capitalize">{subscriptionInfo.plan}</span>
-                        <Badge variant="outline" className={`ml-3 ${subscriptionInfo.color}`}>
-                          {subscriptionInfo.status}
-                        </Badge>
-                        <Badge variant="outline" className="ml-3">
-                          {subscriptionInfo?.cancelAtPeriodEnd ? "Cancels at period end" : "Renews automatically"}
-                        </Badge>
+                    <div className="flex-1 text-center sm:text-left">
+                      <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
+                        <span className="text-xl sm:text-2xl font-bold capitalize">{subscriptionInfo.plan}</span>
+                        <div className="flex flex-wrap justify-center sm:justify-start gap-2">
+                          <Badge variant="outline" className={`${subscriptionInfo.color}`}>
+                            {subscriptionInfo.status}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {subscriptionInfo?.cancelAtPeriodEnd ? "Cancels at period end" : "Renews automatically"}
+                          </Badge>
+                        </div>
                       </div>
                       {subscription && (
                         <div className="space-y-1">
@@ -260,29 +262,29 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="bg-gray-800/50 rounded-lg p-4">
                       <p className="text-gray-400 text-sm mb-2">Plan Features</p>
                       <ul className="space-y-1">
                         {subscriptionInfo.status === "active" ? (
                           <>
                             <li className="text-sm flex items-center">
-                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2" />
+                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
                               Unlimited audio creation
                             </li>
                             <li className="text-sm flex items-center">
-                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2" />
+                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
                               Premium voices
                             </li>
                             <li className="text-sm flex items-center">
-                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2" />
+                              <CheckCircleIcon className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
                               Background music
                             </li>
                           </>
                         ) : (
                           <>
                             <li className="text-sm flex items-center text-gray-500">
-                              <AlertCircleIcon className="h-4 w-4 text-gray-500 mr-2" />
+                              <AlertCircleIcon className="h-4 w-4 text-gray-500 mr-2 flex-shrink-0" />
                               Limited features
                             </li>
                             <li className="text-sm">
@@ -319,7 +321,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="bg-gray-800/50 rounded-lg p-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4 sm:col-span-2 lg:col-span-1">
                       <p className="text-gray-400 text-sm mb-2">
                         {subscriptionInfo.status === "active" ? "Next Payment" : "Subscription"}
                       </p>
@@ -447,11 +449,11 @@ export default function DashboardPage() {
       )}
 
       {currentAudio && (
-        <Card className="mb-8 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700">
-          <CardContent className="p-6">
+        <Card className="mb-6 sm:mb-8 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700">
+          <CardContent className="p-4 sm:p-6">
             <h3 className="text-lg font-semibold mb-4">Now Playing</h3>
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full flex items-center justify-center mr-4">
+            <div className="flex flex-col sm:flex-row sm:items-center mb-4 gap-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-primary/20 to-purple-500/20 rounded-full flex items-center justify-center mx-auto sm:mx-0 sm:mr-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6 text-primary"
@@ -467,9 +469,9 @@ export default function DashboardPage() {
                   />
                 </svg>
               </div>
-              <div>
-                <h4 className="font-medium">{currentAudio.name}</h4>
-                <p className="text-sm text-gray-400">Created on {formatDate(currentAudio.createdAt)}</p>
+              <div className="text-center sm:text-left">
+                <h4 className="font-medium text-sm sm:text-base break-words">{currentAudio.name}</h4>
+                <p className="text-xs sm:text-sm text-gray-400">Created on {formatDate(currentAudio.createdAt)}</p>
               </div>
             </div>
 
@@ -486,7 +488,7 @@ export default function DashboardPage() {
       )}
 
       <Card className="bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700">
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           <AllTracksSection />
         </CardContent>
       </Card>

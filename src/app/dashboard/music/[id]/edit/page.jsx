@@ -174,7 +174,7 @@ export default function EditMusicPage({ params }) {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto">
       <div className="mb-8">
         <Link href="/dashboard/music" className="flex items-center text-primary hover:underline">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -190,9 +190,9 @@ export default function EditMusicPage({ params }) {
           {error && <div className="bg-red-900/30 border border-red-500 rounded-md p-3 mb-6 text-red-200">{error}</div>}
 
           {currentTrack && (
-            <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+            <div className="mb-6 p-2 sm:p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <div className="min-w-12 w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                   <Music className="h-6 w-6 text-primary" />
                 </div>
                 <div>

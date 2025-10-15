@@ -710,7 +710,7 @@ const BottomPlayer = forwardRef(
     }
 
     return (
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 z-50 py-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 z-50 md:z-[9999] p-2">
         {/* Hidden audio elements */}
         <audio ref={audioRef} src={audioUrl} preload="metadata" />
 
@@ -745,291 +745,567 @@ const BottomPlayer = forwardRef(
           </div>
 
           {/* Player controls */}
-          <div className="flex items-center justify-between py-2 px-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-800 rounded-md flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M9 18V6L21 12L9 18Z"
-                    stroke="#888888"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium">{title}</h3>
+          <div className="py-2 px-4">
+            {/* Mobile Layout */}
+            <div className="block sm:hidden space-y-3">
+              {/* Track name and category */}
+              <div className="text-center">
+                <h3 className="text-sm font-medium truncate">{title}</h3>
                 <p className="text-xs text-gray-400">{category}</p>
               </div>
-            </div>
-
-            <div className="flex items-center justify-center space-x-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full"
-                onClick={onPrevious}
-                disabled={!onPrevious}
-              >
-                <SkipBack className="h-5 w-5" />
-              </Button>
-
-              <Button
-                variant="default"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-white text-black hover:bg-gray-200"
-                onClick={() => onPlayPause(!isPlaying)}
-              >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-              </Button>
-
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onNext} disabled={!onNext}>
-                <SkipForward className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center space-x-1">
-                <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
-                <span className="text-xs text-gray-500">/</span>
-                <span className="text-xs text-gray-400">{formatTime(duration)}</span>
-              </div>
-
-              {/* Volume control */}
-              <div className="relative">
+              
+              {/* Play controls centered */}
+              <div className="flex items-center justify-center space-x-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 rounded-full"
-                  onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                  onClick={onPrevious}
+                  disabled={!onPrevious}
                 >
-                  {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  <SkipBack className="h-5 w-5" />
                 </Button>
 
-                {showVolumeSlider && (
-                  <div className="absolute bottom-full mb-2 p-3 bg-gray-900 rounded-lg shadow-lg w-48">
-                    <div className="mb-3">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-xs text-gray-400">Music Volume</span>
-                        <span className="text-xs text-gray-400">{Math.round(musicVolume * 100)}%</span>
-                      </div>
-                      <Slider
-                        value={[musicVolume]}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        onValueChange={handleMusicVolumeChange}
-                        aria-label="Music Volume"
-                      />
-                    </div>
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white text-black hover:bg-gray-200"
+                  onClick={() => onPlayPause(!isPlaying)}
+                >
+                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                </Button>
 
-                    {frequencyUrl && (
-                      <div className="mb-3">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-400">Frequency Volume</span>
-                          <span className="text-xs text-gray-400">{Math.round(frequencyVolume * 100)}%</span>
-                        </div>
-                        <Slider
-                          value={[frequencyVolume]}
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          onValueChange={handleFrequencyVolumeChange}
-                          aria-label="Frequency Volume"
-                        />
-                      </div>
-                    )}
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onNext} disabled={!onNext}>
+                  <SkipForward className="h-5 w-5" />
+                </Button>
+              </div>
+              
+              {/* Duration on left, options on right */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
+                  <span className="text-xs text-gray-500">/</span>
+                  <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {/* Volume control */}
+                  <div className="relative">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full"
+                      onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                    >
+                      {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                    </Button>
 
-                    {affirmations && affirmations.length > 0 && (
-                      <div className="mb-3">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-400">Affirmations Volume</span>
-                          <span className="text-xs text-gray-400">{Math.round(affirmationsVolume * 100)}%</span>
+                    {showVolumeSlider && (
+                      <div className="absolute bottom-full mb-2 p-3 bg-gray-900 rounded-lg shadow-lg w-48 right-0">
+                        <div className="mb-3">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-400">Music Volume</span>
+                            <span className="text-xs text-gray-400">{Math.round(musicVolume * 100)}%</span>
+                          </div>
+                          <Slider
+                            value={[musicVolume]}
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            onValueChange={handleMusicVolumeChange}
+                            aria-label="Music Volume"
+                          />
                         </div>
-                        <Slider
-                          value={[affirmationsVolume]}
-                          min={0}
-                          max={1}
-                          step={0.01}
-                          onValueChange={handleAffirmationsVolumeChange}
-                          aria-label="Affirmations Volume"
-                        />
-                      </div>
-                    )}
 
-                    {affirmations && affirmations.length > 0 && (
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-xs text-gray-400">Repeat Interval</span>
-                          <span className="text-xs text-gray-400">
-                            {repetitionInterval === 0 ? "No Repeat" : `${repetitionInterval}s`}
-                          </span>
-                        </div>
-                        <Slider
-                          value={[repetitionInterval]}
-                          min={0}
-                          max={60}
-                          step={5}
-                          onValueChange={handleRepetitionIntervalChange}
-                          aria-label="Repetition Interval"
-                        />
+                        {frequencyUrl && (
+                          <div className="mb-3">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs text-gray-400">Frequency Volume</span>
+                              <span className="text-xs text-gray-400">{Math.round(frequencyVolume * 100)}%</span>
+                            </div>
+                            <Slider
+                              value={[frequencyVolume]}
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              onValueChange={handleFrequencyVolumeChange}
+                              aria-label="Frequency Volume"
+                            />
+                          </div>
+                        )}
+
+                        {affirmations && affirmations.length > 0 && (
+                          <div className="mb-3">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs text-gray-400">Affirmations Volume</span>
+                              <span className="text-xs text-gray-400">{Math.round(affirmationsVolume * 100)}%</span>
+                            </div>
+                            <Slider
+                              value={[affirmationsVolume]}
+                              min={0}
+                              max={1}
+                              step={0.01}
+                              onValueChange={handleAffirmationsVolumeChange}
+                              aria-label="Affirmations Volume"
+                            />
+                          </div>
+                        )}
+
+                        {affirmations && affirmations.length > 0 && (
+                          <div>
+                            <div className="flex justify-between mb-1">
+                              <span className="text-xs text-gray-400">Repeat Interval</span>
+                              <span className="text-xs text-gray-400">
+                                {repetitionInterval === 0 ? "No Repeat" : `${repetitionInterval}s`}
+                              </span>
+                            </div>
+                            <Slider
+                              value={[repetitionInterval]}
+                              min={0}
+                              max={60}
+                              step={5}
+                              onValueChange={handleRepetitionIntervalChange}
+                              aria-label="Repetition Interval"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
+
+                  {/* Voice settings */}
+                  {
+                    isAdmin &&
+                      affirmations && affirmations.length > 0 && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                              <Settings className="h-5 w-5" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 max-h-[80vh] overflow-y-auto">
+                            <div className="space-y-4">
+                              <h4 className="font-medium text-sm">Voice Settings</h4>
+
+                              <div className="space-y-2">
+                                <label className="text-xs text-gray-400">Voice Language</label>
+                                <select
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
+                                  value={voiceSettings?.voiceLanguage || "en-US"}
+                                  onChange={(e) => {
+                                    if (onVoiceSettingsChange) {
+                                      onVoiceSettingsChange({
+                                        ...voiceSettings,
+                                        voiceLanguage: e.target.value,
+                                      })
+                                    }
+                                  }}
+                                >
+                                  <option value="en-US">English (US)</option>
+                                  <option value="en-GB">English (UK)</option>
+                                  <option value="es-ES">Spanish</option>
+                                  <option value="fr-FR">French</option>
+                                  <option value="de-DE">German</option>
+                                  <option value="it-IT">Italian</option>
+                                  <option value="ja-JP">Japanese</option>
+                                  <option value="ko-KR">Korean</option>
+                                  <option value="zh-CN">Chinese (Simplified)</option>
+                                  <option value="hi-IN">Hindi</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-xs text-gray-400">Voice Type</label>
+                                <select
+                                  className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
+                                  value={voiceSettings?.voiceType || ""}
+                                  onChange={(e) => {
+                                    if (onVoiceSettingsChange) {
+                                      onVoiceSettingsChange({
+                                        ...voiceSettings,
+                                        voiceType: e.target.value,
+                                      })
+                                    }
+                                  }}
+                                >
+                                  <option value="">Default Voice</option>
+                                  {availableVoices
+                                    .filter((voice) => voice.lang.startsWith(voiceSettings?.voiceLanguage || "en"))
+                                    .map((voice) => (
+                                      <option key={voice.name} value={voice.name}>
+                                        {voice.name} ({voice.lang})
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <label className="text-xs text-gray-400">Voice Pitch</label>
+                                  <span className="text-xs text-gray-400">
+                                    {(voiceSettings?.voicePitch !== undefined
+                                      ? voiceSettings.voicePitch
+                                      : voiceSettings?.pitch || 1.0
+                                    ).toFixed(1)}
+                                  </span>
+                                </div>
+                                <Slider
+                                  value={[
+                                    voiceSettings?.voicePitch !== undefined
+                                      ? voiceSettings.voicePitch
+                                      : voiceSettings?.pitch || 1.0,
+                                  ]}
+                                  min={0}
+                                  max={2.0}
+                                  step={0.1}
+                                  onValueChange={(value) => {
+                                    if (onVoiceSettingsChange) {
+                                      onVoiceSettingsChange({
+                                        ...voiceSettings,
+                                        voicePitch: value[0],
+                                      })
+                                    }
+                                  }}
+                                  aria-label="Voice Pitch"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <label className="text-xs text-gray-400">Voice Speed</label>
+                                  <span className="text-xs text-gray-400">
+                                    {(voiceSettings?.voiceSpeed !== undefined
+                                      ? voiceSettings.voiceSpeed
+                                      : voiceSettings?.rate || 1.0
+                                    ).toFixed(1)}
+                                    x
+                                  </span>
+                                </div>
+                                <Slider
+                                  value={[
+                                    voiceSettings?.voiceSpeed !== undefined
+                                      ? voiceSettings.voiceSpeed
+                                      : voiceSettings?.rate || 1.0,
+                                  ]}
+                                  min={0.5}
+                                  max={2.0}
+                                  step={0.1}
+                                  onValueChange={(value) => {
+                                    if (onVoiceSettingsChange) {
+                                      onVoiceSettingsChange({
+                                        ...voiceSettings,
+                                        voiceSpeed: value[0],
+                                      })
+                                    }
+                                  }}
+                                  aria-label="Voice Speed"
+                                />
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      )
+                  }
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-9 w-9 rounded-full", isRepeat ? "text-primary" : "")}
+                    onClick={() => setIsRepeat(!isRepeat)}
+                  >
+                    <Repeat className="h-5 w-5" />
+                  </Button>
+
+                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onToggleFavorite}>
+                    {isFavorite ? <Heart className="h-5 w-5 fill-red-500 text-red-500" /> : <Heart className="h-5 w-5" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-800 rounded-md flex items-center justify-center">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M9 18V6L21 12L9 18Z"
+                      stroke="#888888"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">{title}</h3>
+                  <p className="text-xs text-gray-400">{category}</p>
+                </div>
               </div>
 
-              {/* Voice settings */}
-              {
-                isAdmin &&
-                  affirmations && affirmations.length > 0 && (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
-                          <Settings className="h-5 w-5" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-80">
-                        <div className="space-y-4">
-                          <h4 className="font-medium text-sm">Voice Settings</h4>
+              <div className="flex items-center justify-center space-x-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full"
+                  onClick={onPrevious}
+                  disabled={!onPrevious}
+                >
+                  <SkipBack className="h-5 w-5" />
+                </Button>
 
-                          <div className="space-y-2">
-                            <label className="text-xs text-gray-400">Voice Language</label>
-                            <select
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
-                              value={voiceSettings?.voiceLanguage || "en-US"}
-                              onChange={(e) => {
-                                if (onVoiceSettingsChange) {
-                                  onVoiceSettingsChange({
-                                    ...voiceSettings,
-                                    voiceLanguage: e.target.value,
-                                  })
-                                }
-                              }}
-                            >
-                              <option value="en-US">English (US)</option>
-                              <option value="en-GB">English (UK)</option>
-                              <option value="es-ES">Spanish</option>
-                              <option value="fr-FR">French</option>
-                              <option value="de-DE">German</option>
-                              <option value="it-IT">Italian</option>
-                              <option value="ja-JP">Japanese</option>
-                              <option value="ko-KR">Korean</option>
-                              <option value="zh-CN">Chinese (Simplified)</option>
-                              <option value="hi-IN">Hindi</option>
-                            </select>
-                          </div>
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white text-black hover:bg-gray-200"
+                  onClick={() => onPlayPause(!isPlaying)}
+                >
+                  {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
+                </Button>
 
-                          <div className="space-y-2">
-                            <label className="text-xs text-gray-400">Voice Type</label>
-                            <select
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
-                              value={voiceSettings?.voiceType || ""}
-                              onChange={(e) => {
-                                if (onVoiceSettingsChange) {
-                                  onVoiceSettingsChange({
-                                    ...voiceSettings,
-                                    voiceType: e.target.value,
-                                  })
-                                }
-                              }}
-                            >
-                              <option value="">Default Voice</option>
-                              {availableVoices
-                                .filter((voice) => voice.lang.startsWith(voiceSettings?.voiceLanguage || "en"))
-                                .map((voice) => (
-                                  <option key={voice.name} value={voice.name}>
-                                    {voice.name} ({voice.lang})
-                                  </option>
-                                ))}
-                            </select>
-                          </div>
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onNext} disabled={!onNext}>
+                  <SkipForward className="h-5 w-5" />
+                </Button>
+              </div>
 
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <label className="text-xs text-gray-400">Voice Pitch</label>
-                              <span className="text-xs text-gray-400">
-                                {(voiceSettings?.voicePitch !== undefined
-                                  ? voiceSettings.voicePitch
-                                  : voiceSettings?.pitch || 1.0
-                                ).toFixed(1)}
-                              </span>
-                            </div>
-                            <Slider
-                              value={[
-                                voiceSettings?.voicePitch !== undefined
-                                  ? voiceSettings.voicePitch
-                                  : voiceSettings?.pitch || 1.0,
-                              ]}
-                              min={0}
-                              max={2.0}
-                              step={0.1}
-                              onValueChange={(value) => {
-                                if (onVoiceSettingsChange) {
-                                  onVoiceSettingsChange({
-                                    ...voiceSettings,
-                                    voicePitch: value[0],
-                                  })
-                                }
-                              }}
-                              aria-label="Voice Pitch"
-                            />
-                          </div>
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
+                  <span className="text-xs text-gray-500">/</span>
+                  <span className="text-xs text-gray-400">{formatTime(duration)}</span>
+                </div>
 
-                          <div className="space-y-2">
-                            <div className="flex justify-between">
-                              <label className="text-xs text-gray-400">Voice Speed</label>
-                              <span className="text-xs text-gray-400">
-                                {(voiceSettings?.voiceSpeed !== undefined
-                                  ? voiceSettings.voiceSpeed
-                                  : voiceSettings?.rate || 1.0
-                                ).toFixed(1)}
-                                x
-                              </span>
-                            </div>
-                            <Slider
-                              value={[
-                                voiceSettings?.voiceSpeed !== undefined
-                                  ? voiceSettings.voiceSpeed
-                                  : voiceSettings?.rate || 1.0,
-                              ]}
-                              min={0.5}
-                              max={2.0}
-                              step={0.1}
-                              onValueChange={(value) => {
-                                if (onVoiceSettingsChange) {
-                                  onVoiceSettingsChange({
-                                    ...voiceSettings,
-                                    voiceSpeed: value[0],
-                                  })
-                                }
-                              }}
-                              aria-label="Voice Speed"
-                            />
-                          </div>
+                {/* Volume control */}
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-full"
+                    onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                  >
+                    {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                  </Button>
+
+                  {showVolumeSlider && (
+                    <div className="absolute bottom-full mb-2 p-3 bg-gray-900 rounded-lg shadow-lg w-48">
+                      <div className="mb-3">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-xs text-gray-400">Music Volume</span>
+                          <span className="text-xs text-gray-400">{Math.round(musicVolume * 100)}%</span>
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                  )
-              }
+                        <Slider
+                          value={[musicVolume]}
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          onValueChange={handleMusicVolumeChange}
+                          aria-label="Music Volume"
+                        />
+                      </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("h-9 w-9 rounded-full", isRepeat ? "text-primary" : "")}
-                onClick={() => setIsRepeat(!isRepeat)}
-              >
-                <Repeat className="h-5 w-5" />
-              </Button>
+                      {frequencyUrl && (
+                        <div className="mb-3">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-400">Frequency Volume</span>
+                            <span className="text-xs text-gray-400">{Math.round(frequencyVolume * 100)}%</span>
+                          </div>
+                          <Slider
+                            value={[frequencyVolume]}
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            onValueChange={handleFrequencyVolumeChange}
+                            aria-label="Frequency Volume"
+                          />
+                        </div>
+                      )}
 
-              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onToggleFavorite}>
-                {isFavorite ? <Heart className="h-5 w-5 fill-red-500 text-red-500" /> : <Heart className="h-5 w-5" />}
-              </Button>
+                      {affirmations && affirmations.length > 0 && (
+                        <div className="mb-3">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-400">Affirmations Volume</span>
+                            <span className="text-xs text-gray-400">{Math.round(affirmationsVolume * 100)}%</span>
+                          </div>
+                          <Slider
+                            value={[affirmationsVolume]}
+                            min={0}
+                            max={1}
+                            step={0.01}
+                            onValueChange={handleAffirmationsVolumeChange}
+                            aria-label="Affirmations Volume"
+                          />
+                        </div>
+                      )}
 
-              {/* <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onDownload}>
-                <Download className="h-5 w-5" />
-              </Button> */}
+                      {affirmations && affirmations.length > 0 && (
+                        <div>
+                          <div className="flex justify-between mb-1">
+                            <span className="text-xs text-gray-400">Repeat Interval</span>
+                            <span className="text-xs text-gray-400">
+                              {repetitionInterval === 0 ? "No Repeat" : `${repetitionInterval}s`}
+                            </span>
+                          </div>
+                          <Slider
+                            value={[repetitionInterval]}
+                            min={0}
+                            max={60}
+                            step={5}
+                            onValueChange={handleRepetitionIntervalChange}
+                            aria-label="Repetition Interval"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Voice settings */}
+                {
+                  isAdmin &&
+                    affirmations && affirmations.length > 0 && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full">
+                            <Settings className="h-5 w-5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <div className="space-y-4">
+                            <h4 className="font-medium text-sm">Voice Settings</h4>
+
+                            <div className="space-y-2">
+                              <label className="text-xs text-gray-400">Voice Language</label>
+                              <select
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
+                                value={voiceSettings?.voiceLanguage || "en-US"}
+                                onChange={(e) => {
+                                  if (onVoiceSettingsChange) {
+                                    onVoiceSettingsChange({
+                                      ...voiceSettings,
+                                      voiceLanguage: e.target.value,
+                                    })
+                                  }
+                                }}
+                              >
+                                <option value="en-US">English (US)</option>
+                                <option value="en-GB">English (UK)</option>
+                                <option value="es-ES">Spanish</option>
+                                <option value="fr-FR">French</option>
+                                <option value="de-DE">German</option>
+                                <option value="it-IT">Italian</option>
+                                <option value="ja-JP">Japanese</option>
+                                <option value="ko-KR">Korean</option>
+                                <option value="zh-CN">Chinese (Simplified)</option>
+                                <option value="hi-IN">Hindi</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-xs text-gray-400">Voice Type</label>
+                              <select
+                                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-sm"
+                                value={voiceSettings?.voiceType || ""}
+                                onChange={(e) => {
+                                  if (onVoiceSettingsChange) {
+                                    onVoiceSettingsChange({
+                                      ...voiceSettings,
+                                      voiceType: e.target.value,
+                                    })
+                                  }
+                                }}
+                              >
+                                <option value="">Default Voice</option>
+                                {availableVoices
+                                  .filter((voice) => voice.lang.startsWith(voiceSettings?.voiceLanguage || "en"))
+                                  .map((voice) => (
+                                    <option key={voice.name} value={voice.name}>
+                                      {voice.name} ({voice.lang})
+                                    </option>
+                                  ))}
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <label className="text-xs text-gray-400">Voice Pitch</label>
+                                <span className="text-xs text-gray-400">
+                                  {(voiceSettings?.voicePitch !== undefined
+                                    ? voiceSettings.voicePitch
+                                    : voiceSettings?.pitch || 1.0
+                                  ).toFixed(1)}
+                                </span>
+                              </div>
+                              <Slider
+                                value={[
+                                  voiceSettings?.voicePitch !== undefined
+                                    ? voiceSettings.voicePitch
+                                    : voiceSettings?.pitch || 1.0,
+                                ]}
+                                min={0}
+                                max={2.0}
+                                step={0.1}
+                                onValueChange={(value) => {
+                                  if (onVoiceSettingsChange) {
+                                    onVoiceSettingsChange({
+                                      ...voiceSettings,
+                                      voicePitch: value[0],
+                                    })
+                                  }
+                                }}
+                                aria-label="Voice Pitch"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <label className="text-xs text-gray-400">Voice Speed</label>
+                                <span className="text-xs text-gray-400">
+                                  {(voiceSettings?.voiceSpeed !== undefined
+                                    ? voiceSettings.voiceSpeed
+                                    : voiceSettings?.rate || 1.0
+                                  ).toFixed(1)}
+                                  x
+                                </span>
+                              </div>
+                              <Slider
+                                value={[
+                                  voiceSettings?.voiceSpeed !== undefined
+                                    ? voiceSettings.voiceSpeed
+                                    : voiceSettings?.rate || 1.0,
+                                ]}
+                                min={0.5}
+                                max={2.0}
+                                step={0.1}
+                                onValueChange={(value) => {
+                                  if (onVoiceSettingsChange) {
+                                    onVoiceSettingsChange({
+                                      ...voiceSettings,
+                                      voiceSpeed: value[0],
+                                    })
+                                  }
+                                }}
+                                aria-label="Voice Speed"
+                              />
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    )
+                }
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("h-9 w-9 rounded-full", isRepeat ? "text-primary" : "")}
+                  onClick={() => setIsRepeat(!isRepeat)}
+                >
+                  <Repeat className="h-5 w-5" />
+                </Button>
+
+                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onToggleFavorite}>
+                  {isFavorite ? <Heart className="h-5 w-5 fill-red-500 text-red-500" /> : <Heart className="h-5 w-5" />}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

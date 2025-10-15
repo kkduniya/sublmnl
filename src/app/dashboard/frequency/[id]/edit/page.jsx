@@ -186,7 +186,7 @@ export default function EditFrequencyPage({ params }) {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto sm:p-6">
       <div className="mb-8">
         <Link href="/dashboard/frequency" className="flex items-center text-primary hover:underline">
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -202,14 +202,14 @@ export default function EditFrequencyPage({ params }) {
           {error && <div className="bg-red-900/30 border border-red-500 rounded-md p-3 mb-6 text-red-200">{error}</div>}
 
           {currentFrequency && (
-            <div className="mb-6 p-4 bg-gray-800 rounded-lg">
+            <div className="mb-6 p-2 sm:p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mr-4">
+                <div className="min-w-12 w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mr-4">
                   <Waves className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-medium">Current Frequency</h3>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm text-gray-400 break-all">
                     {formatDuration(currentFrequency.duration || 0)} • {currentFrequency.path}
                   </p>
                 </div>
