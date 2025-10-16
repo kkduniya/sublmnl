@@ -32,6 +32,7 @@ export async function POST(request) {
         createdAt: new Date(),
         subscription: "free",
         favoriteAudios: [],
+        purchasedAudios: [],
       }
 
       const result = await db.collection("users").insertOne(newUser)
@@ -61,6 +62,7 @@ export async function POST(request) {
         role: user.role || "user",
         subscription: user.subscription || "free",
         favoriteAudios: user.favoriteAudios || [],
+        purchasedAudios: user.purchasedAudios || [],
       },
     })
   } catch (error) {

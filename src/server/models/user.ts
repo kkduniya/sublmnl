@@ -12,6 +12,7 @@ export interface User {
   role: "user" | "admin" // Added role for admin functionality
   createdAt: Date
   favoriteAudios?: ObjectId[] // Added for favorite functionality
+  purchasedAudios?: ObjectId[] // Added for purchased audio functionality
   subscription?: {
     plan: "basic" | "premium" | "ultimate"
     status: "active" | "cancelled" | "expired"

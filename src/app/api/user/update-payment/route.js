@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { connectToDatabase } from "@/server/db"
-import { updatePayment } from "@/server/models/Payment"
+import { updatePayment, findPaymentById } from "@/server/models/Payment"
+import { updateUser } from "@/server/models/user"
 import { ObjectId } from "mongodb"
 
 export async function POST(request) {
@@ -30,6 +31,24 @@ export async function POST(request) {
 
     if (result.modifiedCount === 0) {
       return NextResponse.json({ success: false, message: "No payment updated" }, { status: 404 })
+    }
+
+    // If audioId is being added to the payment, also add it to user's purchasedAudios array
+    if (updates.audioId) {
+      try {
+        // Get the payment to find the userId
+        const payment = await findPaymentById(new ObjectId(id))
+        if (payment && payment.userId) {
+          // Add the audioId to user's purchasedAudios array
+          await updateUser(payment.userId, {
+            $addToSet: { purchasedAudios: new ObjectId(updates.audioId) }
+          })
+          console.log(`Added audio ${updates.audioId} to user ${payment.userId} purchasedAudios array`)
+        }
+      } catch (error) {
+        console.error("Error updating user purchasedAudios:", error)
+        // Don't fail the entire request if this fails, just log the error
+      }
     }
 
     return NextResponse.json({ success: true, message: "Payment updated successfully" })

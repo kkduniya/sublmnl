@@ -1,12 +1,13 @@
 "use client"
 
-import { Play, Pause, MoreVertical, Download, Edit2, Trash2 } from "lucide-react"
+import { Play, Pause, MoreVertical, Download, Edit2, Trash2, Lock, Crown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useState } from "react"
+import LockedAudioPopup from "./LockedAudioPopup"
 
 export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownload, onDelete, onNameUpdate }) {
   // Format date
@@ -31,6 +32,7 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
   const [loading, setLoading] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [lockedPopupOpen, setLockedPopupOpen] = useState(false)
 
   const handleEditClick = () => {
     setNewName(audio.name)
@@ -86,11 +88,20 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
     }
   }
 
+  const handleLockClick = (e) => {
+    e.stopPropagation()
+    setLockedPopupOpen(true)
+  }
+
   return (
     <div
       className={cn(
         "flex items-start sm:items-center p-3 rounded-lg transition-colors",
-        isActive ? "bg-gray-800/50" : "hover:bg-gray-800/30",
+        audio.isLocked 
+          ? "bg-gray-800/20 opacity-60" 
+          : isActive 
+            ? "bg-gray-800/50" 
+            : "hover:bg-gray-800/30",
       )}
     >
       <div className="flex-shrink-0 mr-4">
@@ -107,11 +118,18 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
         </div> */}
 
         <button
-          onClick={onPlay}
-          className="p-2 bg-gradient-to-r from-primary/20 to-purple-500/20 hover:from-primary/30 hover:to-purple-500/30 rounded-full transition-colors"
-          aria-label={isPlaying ? "Pause" : "Play"}
+          onClick={audio.isLocked ? handleLockClick : onPlay}
+          className={cn(
+            "p-2 rounded-full transition-colors",
+            audio.isLocked 
+              ? "bg-gray-600/20 hover:bg-gray-600/30 cursor-pointer" 
+              : "bg-gradient-to-r from-primary/20 to-purple-500/20 hover:from-primary/30 hover:to-purple-500/30"
+          )}
+          aria-label={audio.isLocked ? "Unlock audio" : (isPlaying ? "Pause" : "Play")}
         >
-          {isPlaying ? (
+          {audio.isLocked ? (
+            <Lock className="h-5 w-5 text-gray-500 hover:text-yellow-500 transition-colors" />
+          ) : isPlaying ? (
             <Pause className="h-5 w-5 text-primary" />
           ) : (
             <Play className="h-5 w-5 text-primary" />
@@ -122,7 +140,10 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium truncate">{audio.name}</h3>
+          <h3 className={cn("font-medium truncate", audio.isLocked && "text-gray-500")}>{audio.name}</h3>
+          {audio.isPurchased && !audio.isLocked && (
+            <Crown className="h-4 w-4 text-yellow-500" title="Purchased Audio" />
+          )}
           <button onClick={handleEditClick} className="ml-1 p-1 rounded hover:bg-gray-700/40" aria-label="Edit name">
             <Edit2 className="h-4 w-4 text-gray-400 hover:text-primary" />
           </button>
@@ -181,6 +202,14 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Locked Audio Popup */}
+      <LockedAudioPopup
+        open={lockedPopupOpen}
+        onOpenChange={setLockedPopupOpen}
+        audioName={audio.name}
+        audioId={audio.id || audio._id}
+      />
     </div>
   )
 }

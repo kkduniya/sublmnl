@@ -141,7 +141,7 @@ export function PaymentsTable({ isAdmin = false, userId }) {
                     {new Intl.NumberFormat("en-US", {
                       style: "currency",
                       currency: payment.currency.toUpperCase(),
-                    }).format(payment.amount / 100)}
+                    }).format(payment.amount)}
                   </TableCell>
                   <TableCell>{getStatusBadge(payment.status)}</TableCell>
                   <TableCell>{getTypeBadge(payment.type)}</TableCell>

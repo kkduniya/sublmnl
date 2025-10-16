@@ -31,6 +31,8 @@ export default function SettingsPage() {
   const [isAudioSettingsLoading, setIsAudioSettingsLoading] = useState(false)
   const [message, setMessage] = useState({ type: "", text: "" })
   const [userProfile , setUserProfile] = useState({})
+  const [userProfileLoading, setUserProfileLoading] = useState(false)
+  const [audioSettingsLoading, setAudioSettingsLoading] = useState(false)
 
   const isAdmin = user?.role === "admin"
 
@@ -52,7 +54,7 @@ export default function SettingsPage() {
 
   const fetchUserProfile = async () => {
   try {
-
+    setUserProfileLoading(true)
     const response = await fetch("/api/user/profile", {
       method: "GET",
       headers: {
@@ -76,13 +78,15 @@ export default function SettingsPage() {
 
   } catch (error) {
     console.error("Error fetching user profile:", error.message)
-    return null
+  } finally {
+    setUserProfileLoading(false)
   }
 }
 
 
   const fetchAudioSettings = async () => {
     try {
+      setAudioSettingsLoading(true)
       const response = await fetch("/api/user/settings/audio")
       if (response.ok) {
         const data = await response.json()
@@ -92,6 +96,8 @@ export default function SettingsPage() {
       }
     } catch (error) {
       console.error("Error fetching audio settings:", error)
+    } finally {
+      setAudioSettingsLoading(false)
     }
   }
 
@@ -283,6 +289,12 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="profile">
+          {
+            userProfileLoading ? 
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+            :
           <div className="glass-card p-6">
             <h2 className="text-xl font-semibold mb-4">Profile Information</h2>
             <form onSubmit={handleProfileUpdate}>
@@ -337,6 +349,7 @@ export default function SettingsPage() {
               </button>
             </form>
           </div>
+          }
         </TabsContent>
 
         <TabsContent value="security">
@@ -402,112 +415,119 @@ export default function SettingsPage() {
         {
           isAdmin &&
           <TabsContent value="audio">
-            <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold mb-4">Audio Playback Settings</h2>
-              <form onSubmit={handleAudioSettingsUpdate}>
-                {/* <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <label htmlFor="musicVolume" className="block text-sm font-medium text-gray-300">
-                    Music Volume
-                  </label>
-                  <span className="text-sm text-gray-400">{Math.round(audioSettings.musicVolume * 100)}%</span>
-                </div>
-                <Slider
-                  id="musicVolume"
-                  value={[audioSettings.musicVolume]}
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  onValueChange={(value) => handleAudioSettingChange("musicVolume", value[0])}
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-500 mt-1">Control the volume of background music tracks.</p>
-              </div> */}
-
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <label htmlFor="affirmationsVolume" className="block text-sm font-medium text-gray-300">
-                      Affirmations Volume
-                    </label>
-                    <span className="text-sm text-gray-400">{Math.round(audioSettings.affirmationsVolume * 100)}%</span>
-                  </div>
-                  <Slider
-                    id="affirmationsVolume"
-                    value={[audioSettings.affirmationsVolume]}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    onValueChange={(value) => handleAudioSettingChange("affirmationsVolume", value[0])}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Control the volume of Sublmnl affirmation voice.</p>
-                </div>
-
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <label htmlFor="frequencyVolume" className="block text-sm font-medium text-gray-300">
-                      Frequency Volume
-                    </label>
-                    <span className="text-sm text-gray-400">{Math.round(audioSettings.frequencyVolume * 100)}%</span>
-                  </div>
-                  <Slider
-                    id="frequencyVolume"
-                    value={[audioSettings.frequencyVolume]}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    onValueChange={(value) => handleAudioSettingChange("frequencyVolume", value[0])}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Control the volume of frequency.</p>
-                </div>
-
-                <div className="mb-6">
-                  <label htmlFor="repetitionInterval" className="block text-sm font-medium text-gray-300 mb-2">
-                    Repetition Interval (seconds)
-                  </label>
-                  <input
-                    id="repetitionInterval"
-                    name="repetitionInterval"
-                    type="number"
-                    min="1"
-                    max="60"
-                    value={audioSettings.repetitionInterval}
-                    onChange={(e) => handleAudioSettingChange("repetitionInterval", Number.parseInt(e.target.value))}
-                    className="input-field"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">How often affirmations should repeat (in seconds).</p>
-                </div>
-
-                <div className="mb-6">
-                  <label htmlFor="speed" className="block text-sm font-medium text-gray-300 mb-2">
-                    Affirmation Speed
-                  </label>
-                  <select
-                    id="speed"
-                    name="speed"
-                    value={audioSettings.speed}
-                    onChange={(e) => handleAudioSettingChange("speed", Number(e.target.value))}
-                    className="input-field"
-                  >
-                    <option value={1}>1x</option>
-                    <option value={2}>2x</option>
-                    <option value={3}>3x</option>
-                    <option value={4}>4x</option>
-                    <option value={5}>5x</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Control the playback speed of affirmations.</p>
+            {
+              audioSettingsLoading ? 
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
               </div>
+              :
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-semibold mb-4">Audio Playback Settings</h2>
+                <form onSubmit={handleAudioSettingsUpdate}>
+                  {/* <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <label htmlFor="musicVolume" className="block text-sm font-medium text-gray-300">
+                      Music Volume
+                    </label>
+                    <span className="text-sm text-gray-400">{Math.round(audioSettings.musicVolume * 100)}%</span>
+                  </div>
+                  <Slider
+                    id="musicVolume"
+                    value={[audioSettings.musicVolume]}
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    onValueChange={(value) => handleAudioSettingChange("musicVolume", value[0])}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Control the volume of background music tracks.</p>
+                </div> */}
 
-                <button
-                  type="submit"
-                  className="bg-secondary rounded-md text-sm py-3 px-3 hover:bg-accent"
-                  disabled={isAudioSettingsLoading}
-                >
-                  {isAudioSettingsLoading ? "Updating..." : "Save Audio Settings"}
-                </button>
-              </form>
-            </div>
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <label htmlFor="affirmationsVolume" className="block text-sm font-medium text-gray-300">
+                        Affirmations Volume
+                      </label>
+                      <span className="text-sm text-gray-400">{Math.round(audioSettings.affirmationsVolume * 100)}%</span>
+                    </div>
+                    <Slider
+                      id="affirmationsVolume"
+                      value={[audioSettings.affirmationsVolume]}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(value) => handleAudioSettingChange("affirmationsVolume", value[0])}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Control the volume of Sublmnl affirmation voice.</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="flex justify-between items-center mb-2">
+                      <label htmlFor="frequencyVolume" className="block text-sm font-medium text-gray-300">
+                        Frequency Volume
+                      </label>
+                      <span className="text-sm text-gray-400">{Math.round(audioSettings.frequencyVolume * 100)}%</span>
+                    </div>
+                    <Slider
+                      id="frequencyVolume"
+                      value={[audioSettings.frequencyVolume]}
+                      min={0}
+                      max={1}
+                      step={0.01}
+                      onValueChange={(value) => handleAudioSettingChange("frequencyVolume", value[0])}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Control the volume of frequency.</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="repetitionInterval" className="block text-sm font-medium text-gray-300 mb-2">
+                      Repetition Interval (seconds)
+                    </label>
+                    <input
+                      id="repetitionInterval"
+                      name="repetitionInterval"
+                      type="number"
+                      min="1"
+                      max="60"
+                      value={audioSettings.repetitionInterval}
+                      onChange={(e) => handleAudioSettingChange("repetitionInterval", Number.parseInt(e.target.value))}
+                      className="input-field"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">How often affirmations should repeat (in seconds).</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="speed" className="block text-sm font-medium text-gray-300 mb-2">
+                      Affirmation Speed
+                    </label>
+                    <select
+                      id="speed"
+                      name="speed"
+                      value={audioSettings.speed}
+                      onChange={(e) => handleAudioSettingChange("speed", Number(e.target.value))}
+                      className="input-field"
+                    >
+                      <option value={1}>1x</option>
+                      <option value={2}>2x</option>
+                      <option value={3}>3x</option>
+                      <option value={4}>4x</option>
+                      <option value={5}>5x</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Control the playback speed of affirmations.</p>
+                </div>
+
+                  <button
+                    type="submit"
+                    className="bg-secondary rounded-md text-sm py-3 px-3 hover:bg-accent"
+                    disabled={isAudioSettingsLoading}
+                  >
+                    {isAudioSettingsLoading ? "Updating..." : "Save Audio Settings"}
+                  </button>
+                </form>
+              </div>
+            }
           </TabsContent>
         }
       </Tabs>

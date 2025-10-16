@@ -227,6 +227,16 @@ export default function UserAudiosPage() {
     try {
       setAudioError(false)
 
+      // Check if user can play this audio
+      if (!audio.canPlay) {
+        toast({
+          title: "Premium Feature",
+          description: "This audio requires an active subscription or purchase to play.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // If clicking the currently playing track
       if (currentAudio && currentAudio.id === audio.id) {
         setIsPlaying(!isPlaying)
@@ -264,8 +274,28 @@ export default function UserAudiosPage() {
 
     if (filteredAudios.length === 0) return
 
-    const nextIndex = (currentIndex + 1) % filteredAudios.length
-    const nextAudio = filteredAudios[nextIndex]
+    // Find next playable audio
+    let nextIndex = (currentIndex + 1) % filteredAudios.length
+    let nextAudio = filteredAudios[nextIndex]
+    let attempts = 0
+
+    // Skip locked audios
+    while (nextAudio.isLocked && attempts < filteredAudios.length) {
+      nextIndex = (nextIndex + 1) % filteredAudios.length
+      nextAudio = filteredAudios[nextIndex]
+      attempts++
+    }
+
+    // If all audios are locked, don't change
+    if (nextAudio.isLocked) {
+      toast({
+        title: "No Playable Audio",
+        description: "All remaining audios require subscription or purchase.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const globalIndex = audios.findIndex((a) => a.id === nextAudio.id)
 
     setCurrentAudio(nextAudio)
@@ -280,8 +310,28 @@ export default function UserAudiosPage() {
 
     if (filteredAudios.length === 0) return
 
-    const prevIndex = (currentIndex - 1 + filteredAudios.length) % filteredAudios.length
-    const prevAudio = filteredAudios[prevIndex]
+    // Find previous playable audio
+    let prevIndex = (currentIndex - 1 + filteredAudios.length) % filteredAudios.length
+    let prevAudio = filteredAudios[prevIndex]
+    let attempts = 0
+
+    // Skip locked audios
+    while (prevAudio.isLocked && attempts < filteredAudios.length) {
+      prevIndex = (prevIndex - 1 + filteredAudios.length) % filteredAudios.length
+      prevAudio = filteredAudios[prevIndex]
+      attempts++
+    }
+
+    // If all audios are locked, don't change
+    if (prevAudio.isLocked) {
+      toast({
+        title: "No Playable Audio",
+        description: "All remaining audios require subscription or purchase.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const globalIndex = audios.findIndex((a) => a.id === prevAudio.id)
 
     setCurrentAudio(prevAudio)

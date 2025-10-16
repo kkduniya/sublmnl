@@ -38,6 +38,8 @@ export async function GET(request) {
         lastName: user.lastName || "",
         email: user.email,
         role: user.role || "user",
+        favoriteAudios: user.favoriteAudios || [],
+        purchasedAudios: user.purchasedAudios || [],
       },
     })
   } catch (error) {
@@ -97,6 +99,8 @@ export async function PUT(request) {
         lastName: updatedUser.lastName || "",
         email: updatedUser.email,
         role: updatedUser.role,
+        favoriteAudios: updatedUser.favoriteAudios || [],
+        purchasedAudios: updatedUser.purchasedAudios || [],
       },
     })
   } catch (error) {

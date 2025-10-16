@@ -33,6 +33,7 @@ export async function POST(req) {
         },
       ],
       allow_promotion_codes: true,
+      // Note: currency is defined in the Stripe Price object, not here
       metadata: {
         userId: session.user.id,
         ...(audioId ? { audioId } : {}),
@@ -44,6 +45,19 @@ export async function POST(req) {
     return NextResponse.json({ url: checkoutSession.url })
   } catch (error) {
     console.error("Error creating checkout session:", error)
-    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 })
+    
+    // Return more specific error information for debugging
+    if (error.type === 'StripeInvalidRequestError') {
+      return NextResponse.json({ 
+        error: "Invalid Stripe request", 
+        details: error.message,
+        code: error.code 
+      }, { status: 400 })
+    }
+    
+    return NextResponse.json({ 
+      error: "Failed to create checkout session",
+      details: error.message 
+    }, { status: 500 })
   }
 }

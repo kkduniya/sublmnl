@@ -31,7 +31,12 @@ export function SubscriptionsTable({ isAdmin = false }) {
   const fetchSubscriptions = async () => {
     try {
       const params = new URLSearchParams()
-      if (isAdmin) params.append("admin", "true")
+      if (isAdmin) {
+        params.append("admin", "true")
+      } else {
+        // For user view, fetch their own subscriptions
+        params.append("userId", user?.id)
+      }
 
       const response = await fetch(`/api/admin/subscriptions?${params}`)
       const data = await response.json()

@@ -28,6 +28,7 @@ export async function POST(request) {
       password: password,
       role: "user",
       favoriteAudios: [],
+      purchasedAudios: [],
       subscription: {
         plan: "basic",
         status: "active",

@@ -309,7 +309,7 @@ export default function Navbar() {
                   <Link
                     href="/dashboard/audios"
                     className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
-                    style={{ color: isActive("/profile") ? primaryColor : "rgb(209, 213, 219)" }}
+                    style={{ color: isActive("/dashboard/audios") ? primaryColor : "rgb(209, 213, 219)" }}
                     onClick={() => {
                       setIsMenuOpen(false)
                       setIsOpen(false)
@@ -320,7 +320,7 @@ export default function Navbar() {
                   <Link
                     href="/dashboard/subscriptions"
                     className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
-                    style={{ color: isActive("/profile") ? primaryColor : "rgb(209, 213, 219)" }}
+                    style={{ color: isActive("/dashboard/subscriptions") ? primaryColor : "rgb(209, 213, 219)" }}
                     onClick={() => {
                       setIsMenuOpen(false)
                       setIsOpen(false)

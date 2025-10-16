@@ -4,7 +4,7 @@ import { headers } from "next/headers"
 import Stripe from "stripe"
 import { connectToDatabase } from "@/server/db"
 import { createPayment, findPaymentByStripeId, updatePayment } from "@/server/models/Payment"
-import { createSubscription, findSubscriptionByStripeId, updateSubscriptionByStripeId } from "@/server/models/Subscription"
+import { createSubscription, findSubscriptionByStripeId, updateSubscriptionByStripeId, findActiveSubscriptionByUserId } from "@/server/models/Subscription"
 import { updateUser, findUserById } from "@/server/models/user"
 import { ObjectId } from "mongodb"
 
@@ -50,7 +50,7 @@ export async function POST(req) {
           await createPayment({
             userId: userObjectId,
             stripePaymentId: session.payment_intent,
-            amount: session.amount_total , // Convert from cents removed /100
+            amount: session.amount_total / 100, // Convert from cents to dollars
             currency: session.currency,
             status: "succeeded",
             type: "one-time",
@@ -58,8 +58,19 @@ export async function POST(req) {
             audioId: audioId ? new ObjectId(audioId) : undefined,
           })
 
-          // Update user's purchased audios if audioId exists
-          if (audioId) {
+          // Handle multiple audio purchases
+          if (session.metadata?.purchaseType === "multiple_individual_audios") {
+            const audioIds = JSON.parse(session.metadata.audioIds || "[]")
+            const audioObjectIds = audioIds.map(id => new ObjectId(id))
+            
+            // Add all audio IDs to user's purchased audios
+            await updateUser(userObjectId, {
+              $addToSet: { purchasedAudios: { $each: audioObjectIds } },
+            })
+            
+            console.log(`✅ Added ${audioIds.length} audios to user ${userObjectId} purchasedAudios array`)
+          } else if (audioId) {
+            // Handle single audio purchase
             await updateUser(userObjectId, {
               $addToSet: { purchasedAudios: new ObjectId(audioId) },
             })
@@ -94,6 +105,28 @@ export async function POST(req) {
             status: subscription.status,
             customer: subscription.customer
           });
+
+          // Check if user already has an active subscription and cancel it
+          const existingActiveSubscription = await findActiveSubscriptionByUserId(userObjectId);
+          if (existingActiveSubscription) {
+            console.log("🔄 Found existing active subscription, canceling it:", existingActiveSubscription.stripeSubscriptionId);
+            
+            try {
+              // Cancel the existing subscription in Stripe
+              await stripe.subscriptions.cancel(existingActiveSubscription.stripeSubscriptionId);
+              console.log("✅ Successfully canceled previous subscription in Stripe");
+              
+              // Update the subscription status in our database
+              await updateSubscriptionByStripeId(existingActiveSubscription.stripeSubscriptionId, {
+                status: "canceled",
+                canceledAt: new Date(),
+              });
+              console.log("✅ Updated previous subscription status in database");
+            } catch (error) {
+              console.error("❌ Error canceling previous subscription:", error);
+              // Continue with new subscription creation even if cancellation fails
+            }
+          }
 
           // Calculate period dates with fallback
           const currentPeriodStart = subscription.current_period_start
@@ -133,6 +166,7 @@ export async function POST(req) {
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object
+        console.log("🔔 invoice.payment_succeeded triggered for subscription:", invoice.subscription)
 
         if (invoice.subscription) {
           // Find the user ID from the subscription
@@ -149,6 +183,14 @@ export async function POST(req) {
               type: "subscription",
               metadata: invoice.metadata || {},
             })
+
+            // Ensure user has active subscription status after successful payment
+            await updateUser(subscription.userId, {
+              hasActiveSubscription: true,
+              subscription: 'premium'
+            })
+
+            console.log(`✅ Subscription payment succeeded for user ${subscription.userId}, status updated to active`)
           }
         }
         break
@@ -165,7 +207,25 @@ export async function POST(req) {
       //     ...(subscription.canceled_at && { canceledAt: new Date(subscription.canceled_at * 1000) }),
       //   })
       //   break
-      // }
+      //       }
+
+      case "customer.subscription.created": {
+        const subscription = event.data.object
+        console.log("🔔 customer.subscription.created triggered (likely a renewal):", subscription.id)
+
+        // This event is triggered when a subscription is created or renewed
+        // We should ensure the user has active status
+        const existingSubscription = await findSubscriptionByStripeId(subscription.id)
+        
+        if (existingSubscription) {
+          await updateUser(existingSubscription.userId, {
+            hasActiveSubscription: true,
+            subscription: 'premium'
+          })
+          console.log(`✅ Subscription renewed for user ${existingSubscription.userId}, status updated to active`)
+        }
+        break
+      }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object;
@@ -207,19 +267,7 @@ export async function POST(req) {
             }),
           });
 
-          // Update user's subscription status based on subscription status
-          const existingSubscription = await findSubscriptionByStripeId(subscription.id);
-          if (existingSubscription) {
-            const isActive = subscription.status === 'active' && 
-                           new Date(subscription.current_period_end * 1000) > new Date();
-            
-            await updateUser(existingSubscription.userId, {
-              hasActiveSubscription: isActive,
-              subscription: isActive ? 'premium' : 'free'
-            });
-
-            console.log(`Updated user ${existingSubscription.userId} subscription status: ${isActive ? 'active' : 'inactive'}`);
-          }
+          console.log(`Updated subscription ${subscription.id} data successfully`);
         } catch (error) {
           console.error("Error processing subscription update:", error);
         }

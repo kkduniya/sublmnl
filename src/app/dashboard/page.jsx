@@ -137,7 +137,7 @@ export default function DashboardPage() {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency.toUpperCase(),
-    }).format(amount / 100) // Convert from cents
+    }).format(amount) // Amount is already in dollars
   }
 
   const getSubscriptionStatus = () => {

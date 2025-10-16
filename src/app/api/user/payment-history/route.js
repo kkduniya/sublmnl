@@ -37,7 +37,7 @@ export async function GET(request) {
                     ? "Monthly Subscription" 
                     : "One-time Payment"),
       date: payment.createdAt,
-      amount: payment.amount / 100, // Assuming amount is stored in cents
+      amount: payment.amount, // Amount is already stored in dollars
       status: payment.status,
       type: payment.type,
       currency: payment.currency,
