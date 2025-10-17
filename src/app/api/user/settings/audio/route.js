@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "next-auth/next"
 import { getUserAudioSettings, updateUserAudioSettings } from "@/server/models/userSettings"
+import { findUserById } from "@/server/models/user"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function GET(request) {
@@ -59,6 +60,10 @@ export async function POST(request) {
 
     const userId = session.user.id
 
+    // Check if user is admin
+    const currentUser = await findUserById(userId)
+    const isAdmin = currentUser?.role === "admin"
+
     // Get settings from request body
     const { musicVolume, affirmationsVolume, repetitionInterval ,speed , frequencyVolume } = await request.json()
 
@@ -67,14 +72,14 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "Missing required settings" }, { status: 400 })
     }
 
-    // Update user audio settings
+    // Update user audio settings (pass isAdmin flag)
     let result = await updateUserAudioSettings(userId, {
       musicVolume: Number.parseFloat(musicVolume),
       affirmationsVolume: Number.parseFloat(affirmationsVolume),
       frequencyVolume: Number.parseFloat(frequencyVolume),
       repetitionInterval: Number.parseInt(repetitionInterval),
       speed:Number.parseInt(speed),
-    })
+    }, isAdmin)
 
     
 

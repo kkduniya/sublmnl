@@ -13,6 +13,7 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id")
+    const multipleAudios = searchParams.get("multiple_audios") === "true"
 
     if (!sessionId) {
       router.push("/")
@@ -58,16 +59,31 @@ export default function PaymentSuccessPage() {
         ) : paymentDetails ? (
           <div className="text-left mb-8">
             <p className="text-gray-300 mb-6 text-center">
-              Thank you for your purchase. Your payment has been processed successfully.
+              {paymentDetails.metadata?.purchaseType === "multiple_individual_audios" 
+                ? `Thank you for purchasing ${paymentDetails.metadata?.totalAudios} audio tracks! Your payment has been processed successfully.`
+                : "Thank you for your purchase. Your payment has been processed successfully."
+              }
             </p>
 
             <div className="space-y-3 bg-gray-800/50 p-4 rounded-md">
               <div className="flex justify-between">
                 <span className="text-gray-400">Payment Type:</span>
                 <span className="font-medium">
-                  {paymentDetails.mode === "subscription" ? "Subscription" : "One-time Payment"}
+                  {paymentDetails.mode === "subscription" 
+                    ? "Subscription" 
+                    : paymentDetails.metadata?.purchaseType === "multiple_individual_audios"
+                      ? "Multiple Audio Purchase"
+                      : "One-time Payment"
+                  }
                 </span>
               </div>
+
+              {paymentDetails.metadata?.purchaseType === "multiple_individual_audios" && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Audio Tracks:</span>
+                  <span className="font-medium">{paymentDetails.metadata?.totalAudios} tracks</span>
+                </div>
+              )}
 
               <div className="flex justify-between">
                 <span className="text-gray-400">Amount:</span>
@@ -96,16 +112,34 @@ export default function PaymentSuccessPage() {
         )}
 
         <div className="flex flex-col space-y-3">
-          {/* {paymentDetails?.mode === "subscription" ? (
-            <Button onClick={() => router.push("/create")}>Create Your First Audio</Button>
+          {paymentDetails?.metadata?.purchaseType === "multiple_individual_audios" ? (
+            <>
+              <Button onClick={() => router.push("/dashboard/audios")}>
+                View Your {paymentDetails.metadata?.totalAudios} Purchased Tracks
+              </Button>
+              <Button variant="outline" onClick={() => router.push("/create")}>
+                Create More Audio
+              </Button>
+            </>
+          ) : paymentDetails?.mode === "subscription" ? (
+            <>
+              <Button onClick={() => router.push("/create")}>Create Your First Audio</Button>
+              <Button variant="outline" onClick={() => router.push("/dashboard/audios")}>
+                View Your Library
+              </Button>
+            </>
           ) : (
-            <Button onClick={() => router.push("/dashboard/audios")}>View Your Purchased Audio</Button>
+            <>
+              <Button onClick={() => router.push("/dashboard/audios")}>View Your Purchased Audio</Button>
+              <Button variant="outline" onClick={() => router.push("/create")}>
+                Create More Audio
+              </Button>
+            </>
           )}
-
+          
           <Button variant="outline" onClick={() => router.push("/")}>
             Return to Home
-          </Button> */}
-          <Button onClick={() => router.push("/dashboard/audios")}>Start Manifesting</Button>
+          </Button>
         </div>
       </div>
     </div>

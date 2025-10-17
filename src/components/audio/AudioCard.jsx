@@ -139,10 +139,10 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
 
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <h3 className={cn("font-medium truncate", audio.isLocked && "text-gray-500")}>{audio.name}</h3>
           {audio.isPurchased && !audio.isLocked && (
-            <Crown className="h-4 w-4 text-yellow-500" title="Purchased Audio" />
+            <Crown className="min-w-[16px] h-4 w-4 text-yellow-500" title="Purchased Audio" />
           )}
           <button onClick={handleEditClick} className="ml-1 p-1 rounded hover:bg-gray-700/40" aria-label="Edit name">
             <Edit2 className="h-4 w-4 text-gray-400 hover:text-primary" />
@@ -191,7 +191,7 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
           <DialogHeader>
             <DialogTitle>Delete Audio</DialogTitle>
           </DialogHeader>
-          <div>Are you sure you want to delete <span className="font-semibold">{audio.name}</span>? This action cannot be undone.</div>
+          <div className="text-center">Are you sure you want to delete <span className="font-semibold">{audio.name}</span>? <br /> This action cannot be undone.</div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => setDeleteOpen(false)} disabled={deleteLoading}>
               Cancel

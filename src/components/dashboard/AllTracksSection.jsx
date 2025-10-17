@@ -197,6 +197,7 @@ export default function AllTracksSection() {
             voiceSpeed: currentAudio.voiceSpeed || 1.0,
             voiceType: currentAudio.voiceType || "default",
           }}
+          onClose={() => setCurrentAudio(null)}
         />
       )}
     </div>

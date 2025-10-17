@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, Download, Repeat, Settings } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Heart, Download, Repeat, Settings, X } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -36,11 +36,12 @@ const BottomPlayer = forwardRef(
         pitch: 1.0,
         rate: 1.0,
         voiceLanguage: "en-US",
-        voicePitch: 0,
-        voiceSpeed: 0,
+        voicePitch: 1.0,
+        voiceSpeed: 1.0,
         voiceType: "en-US-Neural2-F",
       },
       onVoiceSettingsChange,
+      onClose,
     },
     ref,
   ) => {
@@ -62,6 +63,7 @@ const BottomPlayer = forwardRef(
     const activeAffirmationAudioRef = useRef(null);
     const currentAbortControllerRef = useRef(null); // For cancelling ChatGPT requests
     const isSeekingRef = useRef(false); // Track seeking state
+    const currentAudioUrlRef = useRef(null); // For cleaning up object URLs
 
     const isAdmin = user?.role === "admin"
 
@@ -117,6 +119,12 @@ const BottomPlayer = forwardRef(
 
         if (affirmationTimeoutRef.current) {
           clearTimeout(affirmationTimeoutRef.current)
+        }
+
+        // Clean up any object URL
+        if (currentAudioUrlRef.current) {
+          URL.revokeObjectURL(currentAudioUrlRef.current);
+          currentAudioUrlRef.current = null;
         }
       }
     }, [])
@@ -374,6 +382,12 @@ const BottomPlayer = forwardRef(
         activeAffirmationAudioRef.current = null;
       }
 
+      // Clean up any object URL
+      if (currentAudioUrlRef.current) {
+        URL.revokeObjectURL(currentAudioUrlRef.current);
+        currentAudioUrlRef.current = null;
+      }
+
       setIsAffirmationPlaying(false);
       setCurrentAffirmationIndex(0);
     };
@@ -409,6 +423,12 @@ const BottomPlayer = forwardRef(
           const blob = await resp.blob();
           const url = URL.createObjectURL(blob);
           
+          // Clean up previous URL if it exists
+          if (currentAudioUrlRef.current) {
+            URL.revokeObjectURL(currentAudioUrlRef.current);
+          }
+          currentAudioUrlRef.current = url;
+          
           // Stop any existing affirmation audio first
           if (activeAffirmationAudioRef.current) {
             activeAffirmationAudioRef.current.pause();
@@ -438,6 +458,12 @@ const BottomPlayer = forwardRef(
             setIsAffirmationPlaying(false);
             activeAffirmationAudioRef.current = null;
             
+            // Clean up the object URL to prevent memory leaks
+            if (currentAudioUrlRef.current) {
+              URL.revokeObjectURL(currentAudioUrlRef.current);
+              currentAudioUrlRef.current = null;
+            }
+            
             // Only continue if still playing and not seeking and main audio is still playing
             if (!isPlaying || isSeekingRef.current || !audioRef.current || 
                 audioRef.current.paused || audioRef.current.ended) {
@@ -466,6 +492,12 @@ const BottomPlayer = forwardRef(
             console.error("ChatGPT TTS audio error:", err);
             setIsAffirmationPlaying(false);
             activeAffirmationAudioRef.current = null;
+            
+            // Clean up the object URL to prevent memory leaks
+            if (currentAudioUrlRef.current) {
+              URL.revokeObjectURL(currentAudioUrlRef.current);
+              currentAudioUrlRef.current = null;
+            }
           };
           
           // Only play if still in playing state and not seeking
@@ -874,7 +906,7 @@ const BottomPlayer = forwardRef(
                   </div>
 
                   {/* Voice settings */}
-                  {
+                  {/* {
                     isAdmin &&
                       affirmations && affirmations.length > 0 && (
                         <Popover>
@@ -1005,7 +1037,7 @@ const BottomPlayer = forwardRef(
                           </PopoverContent>
                         </Popover>
                       )
-                  }
+                  } */}
 
                   <Button
                     variant="ghost"
@@ -1019,6 +1051,17 @@ const BottomPlayer = forwardRef(
                   <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onToggleFavorite}>
                     {isFavorite ? <Heart className="h-5 w-5 fill-red-500 text-red-500" /> : <Heart className="h-5 w-5" />}
                   </Button>
+
+                  {onClose && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full ml-2"
+                      onClick={onClose}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -1160,7 +1203,7 @@ const BottomPlayer = forwardRef(
                 </div>
 
                 {/* Voice settings */}
-                {
+                {/* {
                   isAdmin &&
                     affirmations && affirmations.length > 0 && (
                       <Popover>
@@ -1291,7 +1334,7 @@ const BottomPlayer = forwardRef(
                         </PopoverContent>
                       </Popover>
                     )
-                }
+                } */}
 
                 <Button
                   variant="ghost"
@@ -1305,6 +1348,17 @@ const BottomPlayer = forwardRef(
                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={onToggleFavorite}>
                   {isFavorite ? <Heart className="h-5 w-5 fill-red-500 text-red-500" /> : <Heart className="h-5 w-5" />}
                 </Button>
+
+                {onClose && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full ml-2"
+                    onClick={onClose}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>
