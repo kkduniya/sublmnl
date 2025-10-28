@@ -33,7 +33,10 @@ export default function EnhancedAudioPlayer({
   speed= 1.0, // Playback speed
   subscriptionStatus,
   handleSaveToLibrary,
-  handlePricingForLoggedInUser
+  handlePricingForLoggedInUser,
+  musicTrack = null, // Music track info
+  category = "General", // Category
+  voicePitch = 0, // Voice pitch
 }) {
   const { user } = useAuth();
   const [isPlaying, setIsPlaying] = useState(false)
@@ -813,16 +816,18 @@ export default function EnhancedAudioPlayer({
                 if (audioUrl && affirmations && affirmations.length > 0) {
                   const data = {
                     affirmations,
-                    musicTrack: null,
+                    musicTrack: musicTrack,
                     voiceType: voiceSettings?.voice || "default",
                     voiceName: voiceSettings?.voice || "default",
                     voiceLanguage: "en-US",
-                    voicePitch: 0,
-                    voiceSpeed: 0,
-                    volume: 0.3,
+                    voicePitch: voicePitch || 0,
+                    voiceSpeed: speed || 0,
+                    volume: affirmationsVolume,
                     audioUrl,
-                    category: "General",
+                    category: category || "General",
                     repetitionInterval: repetitionInterval || 10,
+                    frequencyUrl: frequencyUrl || null,
+                    frequencyVolume: frequencyVolume || 0.5,
                   }
                   localStorage.setItem("pendingAudioSave", JSON.stringify(data))
                 }
@@ -846,16 +851,18 @@ export default function EnhancedAudioPlayer({
                 if (audioUrl && affirmations && affirmations.length > 0) {
                   const data = {
                     affirmations,
-                    musicTrack: null,
+                    musicTrack: musicTrack,
                     voiceType: voiceSettings?.voice || "default",
                     voiceName: voiceSettings?.voice || "default",
                     voiceLanguage: "en-US",
-                    voicePitch: 0,
-                    voiceSpeed: 0,
-                    volume: 0.3,
+                    voicePitch: voicePitch || 0,
+                    voiceSpeed: speed || 0,
+                    volume: affirmationsVolume,
                     audioUrl,
-                    category: "General",
+                    category: category || "General",
                     repetitionInterval: repetitionInterval || 10,
+                    frequencyUrl: frequencyUrl || null,
+                    frequencyVolume: frequencyVolume || 0.5,
                   }
                   localStorage.setItem("pendingAudioSave", JSON.stringify(data))
                 }
@@ -881,21 +888,23 @@ export default function EnhancedAudioPlayer({
             setIsPlaying(false)
             isPlayingRef.current = false
             onPlayStateChange(false)
-            // Save pending audio info for guests
+            // Save pending audio info for logged-in users without subscription
             try {
               if (audioUrl && affirmations && affirmations.length > 0) {
                 const data = {
                   affirmations,
-                  musicTrack: null,
+                  musicTrack: musicTrack,
                   voiceType: voiceSettings?.voice || "default",
                   voiceName: voiceSettings?.voice || "default",
                   voiceLanguage: "en-US",
-                  voicePitch: 0,
-                  voiceSpeed: 0,
-                  volume: 0.3,
+                  voicePitch: voicePitch || 0,
+                  voiceSpeed: speed || 0,
+                  volume: affirmationsVolume,
                   audioUrl,
-                  category: "General",
+                  category: category || "General",
                   repetitionInterval: repetitionInterval || 10,
+                  frequencyUrl: frequencyUrl || null,
+                  frequencyVolume: frequencyVolume || 0.5,
                 }
                 localStorage.setItem("pendingAudioSave", JSON.stringify(data))
               }
@@ -923,16 +932,18 @@ export default function EnhancedAudioPlayer({
               if (audioUrl && affirmations && affirmations.length > 0) {
                 const data = {
                   affirmations,
-                  musicTrack: null,
+                  musicTrack: musicTrack,
                   voiceType: voiceSettings?.voice || "default",
                   voiceName: voiceSettings?.voice || "default",
                   voiceLanguage: "en-US",
-                  voicePitch: 0,
-                  voiceSpeed: 0,
-                  volume: 0.3,
+                  voicePitch: voicePitch || 0,
+                  voiceSpeed: speed || 0,
+                  volume: affirmationsVolume,
                   audioUrl,
-                  category: "General",
+                  category: category || "General",
                   repetitionInterval: repetitionInterval || 10,
+                  frequencyUrl: frequencyUrl || null,
+                  frequencyVolume: frequencyVolume || 0.5,
                 }
                 localStorage.setItem("pendingAudioSave", JSON.stringify(data))
               }

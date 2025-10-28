@@ -140,7 +140,7 @@ export default function AudioCard({ audio, isPlaying, isActive, onPlay, onDownlo
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
-          <h3 className={cn("font-medium truncate", audio.isLocked && "text-gray-500")}>{audio.name}</h3>
+          <h3 className={cn("font-medium truncate cursor-pointer", audio.isLocked && "text-gray-500 hover:text-yellow-500")} onClick={audio.isLocked ? handleLockClick : onPlay}>{audio.name}</h3>
           {audio.isPurchased && !audio.isLocked && (
             <Crown className="min-w-[16px] h-4 w-4 text-yellow-500" title="Purchased Audio" />
           )}

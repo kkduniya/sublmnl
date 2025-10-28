@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [showPasswordOptions, setShowPasswordOptions] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
+  const [subscription, setSubscription] = useState('free')
 
   useEffect(() => {
     if (!requireAuth()) return
@@ -45,16 +46,18 @@ export default function ProfilePage() {
           },
         })
 
+        
         const data = await response.json()
-        setFormData((prev) => ({
+        if (data.success) {
+          setFormData((prev) => ({
             ...prev,
             firstName: data?.user?.firstName || "",
             lastName: data?.user?.lastName || "",
             email: data?.user?.email || "",
           }))
-        
-
-        if (!response.ok) {
+          setSubscription(data?.user?.subscription || 'free')
+        }
+        else {
           throw new Error(data.message || "Failed to fetch user profile")
         }
 
@@ -276,7 +279,7 @@ export default function ProfilePage() {
 
               <div>
                 <h3 className="text-sm font-medium text-gray-400 mb-1">Subscription Plan</h3>
-                <p className="text-lg capitalize">{user.subscription.toLowerCase() === "premium" ? "Sublmnl Membership" : user.subscription || "Free"}</p>
+                <p className="text-lg capitalize">{subscription.toLowerCase() === "premium" ? "Sublmnl Membership" : "No active subscription"}</p>
               </div>
             </div>
           )}

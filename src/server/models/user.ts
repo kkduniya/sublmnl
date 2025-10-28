@@ -84,17 +84,29 @@ export async function findUsersById(ids: ObjectId[]) {
   }
 }
 
-export async function updateUser(id: ObjectId, updates: Partial<User>) {
+export async function updateUser(id: ObjectId, updates: Partial<User> | Record<string, any>) {
   try {
     console.log(`Updating user with ID: ${id}`, updates)
     
-    // If updating password, hash it first
-    let updatesToApply = { ...updates }
-    if (updatesToApply.password) {
-      updatesToApply.password = await bcrypt.hash(updatesToApply.password, 10)
+    // Check if updates contain MongoDB operators (fields starting with $)
+    const hasOperators = Object.keys(updates).some(key => key.startsWith('$'))
+    
+    let updateQuery: any
+    
+    if (hasOperators) {
+      // If updates contain operators like $addToSet, $push, etc., use them directly
+      updateQuery = updates
+    } else {
+      // If updating password, hash it first
+      let updatesToApply = { ...updates }
+      if (updatesToApply.password) {
+        updatesToApply.password = await bcrypt.hash(updatesToApply.password, 10)
+      }
+      // For regular field updates, wrap in $set
+      updateQuery = { $set: updatesToApply }
     }
     
-    const result = await usersCollection.updateOne({ _id: id }, { $set: updatesToApply })
+    const result = await usersCollection.updateOne({ _id: id }, updateQuery)
     console.log(`Update result: ${result.matchedCount} matched, ${result.modifiedCount} modified`)
     return result
   } catch (error) {

@@ -119,8 +119,8 @@ export default function AudioSelectionPopup({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col p-4 sm:p-6">
-        <DialogHeader className="pb-4">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] 2xl:max-h-[80vh] overflow-hidden flex flex-col p-4 sm:p-6">
+        <DialogHeader>
           <DialogTitle className="text-center text-xl sm:text-2xl font-bold text-white">
             Select Audios to Purchase
           </DialogTitle>
@@ -216,7 +216,7 @@ export default function AudioSelectionPopup({
 
         {/* Footer with purchase button */}
         {userAudios.length > 0 && (
-          <div className="border-t border-gray-700 pt-3 sm:pt-4 mt-3 sm:mt-4">
+          <div className="border-t border-gray-700 pt-3 sm:pt-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 sm:mb-4 space-y-2 sm:space-y-0">
               <div>
                 <p className="text-xs sm:text-sm text-gray-400">Total for {selectedAudios.length} audio(s)</p>

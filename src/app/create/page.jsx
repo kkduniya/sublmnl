@@ -2057,6 +2057,9 @@ export default function CreatePage() {
                             subscriptionStatus={subscriptionStatus}
                             handleSaveToLibrary={handleSaveToLibrary}
                             handlePricingForLoggedInUser={handlePricingForLoggedInUser}
+                            musicTrack={formData.musicTrack}
+                            category={formData.category}
+                            voicePitch={formData.voicePitch || 0}
                           />
                         </div>
 

@@ -358,7 +358,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </ul>
       </div>
 
-      <div className="w-full border-t border-gray-800 p-4 bg-[#1d4f59] mb-20">
+      <div className="w-full border-t border-gray-800 px-4 py-2 bg-[#1d4f59] mb-20 cursor-pointer" onClick={() => router.push("/profile")}>
         <div className={`flex ${(isCollapsed && !isMobile) ? "justify-center" : "items-center space-x-3"}`}>
           <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
             {getUserInitials()}
@@ -366,9 +366,9 @@ export default function Sidebar({ isOpen, onClose }) {
           {(!isCollapsed || isMobile) && (
             <div className="overflow-hidden">
               <div className="font-medium truncate">{getUserDisplayName()}</div>
-              <div className="text-sm text-gray-400">
+              {/* <div className="text-sm text-gray-400">
                 {user?.subscription ? <span className="capitalize">{user?.subscription}</span> : "Free"}
-              </div>
+              </div> */}
             </div>
           )}
         </div>

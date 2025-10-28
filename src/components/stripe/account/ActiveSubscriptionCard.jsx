@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { format } from "date-fns"
 import { useAuth } from "@/context/AuthContext"
-import { CreditCard, Calendar, Settings } from "lucide-react"
+import { CreditCard, Calendar, Settings, Clock, CalendarCheck } from "lucide-react"
 import AudioSelectionPopup from "./AudioSelectionPopup"
 
 export function ActiveSubscriptionCard({ onManagementStateChange }) {
@@ -17,6 +17,7 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
   const [showCancelPopup, setShowCancelPopup] = useState(false)
   const [showAudioSelectionPopup, setShowAudioSelectionPopup] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [reactivating, setReactivating] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -40,11 +41,6 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleUpdatePayment = () => {
-    // Open Stripe customer portal for payment method updates
-    window.open("https://billing.stripe.com/p/login/test_28o5kO0Ql2Hl2cg144", "_blank")
   }
 
   const handleManageSubscription = () => {
@@ -115,6 +111,26 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
       alert("Error canceling subscription. Please try again.")
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleReactivateSubscription = async (subscriptionId) => {
+    try {
+      setReactivating(true)
+      const response = await fetch("/api/stripe/reactivate-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscriptionId }),
+      })
+      if (response.ok) {
+        await fetchActiveSubscription()
+      }else {
+        console.error("Failed to reactivate subscription")
+      }
+    } catch (error) {
+      console.error("Error reactivating subscription:", error)
+    } finally {
+      setReactivating(false)
     }
   }
 
@@ -328,16 +344,21 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
                   Sublmnl Membership
                 </h3>
                 <div className="flex items-center gap-2">
-                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                  <Badge variant="default" className="bg-green-500">
                     Active
+                  </Badge>
+                  <Badge variant="default" className={`${subscription.cancelAtPeriodEnd ? "bg-red-500" : "bg-neutral-700 text-white"}`}>
+                    {subscription.cancelAtPeriodEnd
+                    ? "Cancels at period end"
+                    : "Renews automatically"}
                   </Badge>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3 mb-4 md:mb-6">
+            <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <CalendarCheck className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <div className="min-w-0">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Plan:</span>
                   <span className="ml-2 font-medium">Monthly</span>
@@ -357,23 +378,23 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
                 <div className="min-w-0">
                   <span className="text-sm text-gray-600 dark:text-gray-400">Renewal date:</span>
                   <span className="ml-2 font-medium">
-                    {format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
+                    {subscription.cancelAtPeriodEnd ? "No auto renewal" : format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Current period :</span>
+                  <span className="ml-2 font-medium">
+                    {format(new Date(subscription.currentPeriodStart), "MMM dd, yyyy")} - {format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
                   </span>
                 </div>
               </div>
 
             </div>
 
-            {/* <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                variant="outline" 
-                onClick={handleUpdatePayment}
-                className="flex items-center justify-center gap-2 w-full sm:w-auto"
-              >
-                <CreditCard className="h-4 w-4" />
-                Update Payment
-              </Button>
-            </div> */}
           </div>
         </div>
 
@@ -381,14 +402,42 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
         <div className="border-t bg-gray-50 dark:bg-gray-800/50 p-4 md:p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
-                Manage Subscription Plan
-              </h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Adjust your plan anytime to better suit your needs.
-              </p>
+              {
+                subscription.cancelAtPeriodEnd ? (
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Reactivate Subscription Renewal
+                  </h4>
+                ) : (
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Manage Subscription Plan
+                  </h4>
+                )
+              }
+              {
+                subscription.cancelAtPeriodEnd ? (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Reactivate your subscription renewal to continue accessing your created audios.
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Adjust your plan anytime to better suit your needs.
+                  </p>
+                )
+              }
             </div>
-            <Button 
+            {
+              subscription.cancelAtPeriodEnd ? (
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleReactivateSubscription(subscription.stripeSubscriptionId)}
+                  disabled={reactivating}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <Clock className="h-4 w-4" />
+                  {reactivating ? "Reactivating..." : "Reactivate Subscription Renewal"}
+                </Button>
+              ) : (
+                <Button 
               variant="outline" 
               onClick={handleManageSubscription}
               className="flex items-center justify-center gap-2 w-full sm:w-auto"
@@ -396,6 +445,9 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
               <Settings className="h-4 w-4" />
               Manage Subscription
             </Button>
+            )
+            }
+            
           </div>
         </div>
       </CardContent>

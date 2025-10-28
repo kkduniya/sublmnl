@@ -40,6 +40,7 @@ export async function GET(request) {
         role: user.role || "user",
         favoriteAudios: user.favoriteAudios || [],
         purchasedAudios: user.purchasedAudios || [],
+        subscription: user.subscription || 'free',
       },
     })
   } catch (error) {

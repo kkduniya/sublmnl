@@ -115,7 +115,7 @@ export function PaymentsTable({ isAdmin = false, userId }) {
               <TableHead>Status</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Date</TableHead>
-              <TableHead>Audio ID</TableHead>
+              <TableHead>Total Audios</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,9 +144,9 @@ export function PaymentsTable({ isAdmin = false, userId }) {
                     }).format(payment.amount)}
                   </TableCell>
                   <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                  <TableCell>{getTypeBadge(payment.type)}</TableCell>
-                  <TableCell>{formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}</TableCell>
-                  <TableCell>{payment?.audioId ? payment?.audioId : "No Audio Yet"}</TableCell>
+                  <TableCell className="capitalize whitespace-nowrap">{getTypeBadge(payment?.metadata?.purchaseType ? "multiple audio purchase" : "single audio purchase")}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}</TableCell>
+                  <TableCell className="whitespace-nowrap">{payment?.metadata?.totalAudios ? `${payment?.metadata?.totalAudios} audio tracks` : "1 audio track"}</TableCell>
                 </TableRow>
               ))
             )}

@@ -30,11 +30,7 @@ export default function LockedAudioPopup({
         <div className="space-y-4">
           {/* Audio Info */}
           <div className="bg-gray-800/30 rounded-lg p-4">
-            <h3 className="font-medium text-white mb-2">{audioName}</h3>
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <Crown className="h-4 w-4 text-yellow-500" />
-              <span>Premium Content</span>
-            </div>
+            <h3 className="font-medium text-white">{audioName}</h3>
           </div>
 
           {/* Options */}

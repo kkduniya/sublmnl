@@ -46,22 +46,22 @@ export async function POST(req) {
         const userObjectId = new ObjectId(userId)
 
         if (session.mode === "payment") {
-          // Handle one-time payment
-          await createPayment({
-            userId: userObjectId,
-            stripePaymentId: session.payment_intent,
-            amount: session.amount_total / 100, // Convert from cents to dollars
-            currency: session.currency,
-            status: "succeeded",
-            type: "one-time",
-            metadata: session.metadata || {},
-            audioId: audioId ? new ObjectId(audioId) : undefined,
-          })
-
           // Handle multiple audio purchases
           if (session.metadata?.purchaseType === "multiple_individual_audios") {
             const audioIds = JSON.parse(session.metadata.audioIds || "[]")
             const audioObjectIds = audioIds.map(id => new ObjectId(id))
+            
+            // Create payment record with all audio IDs
+            await createPayment({
+              userId: userObjectId,
+              stripePaymentId: session.payment_intent,
+              amount: session.amount_total / 100, // Convert from cents to dollars
+              currency: session.currency,
+              status: "succeeded",
+              type: "one-time",
+              metadata: session.metadata || {},
+              audioId: audioObjectIds, // Save array of audio IDs
+            })
             
             // Add all audio IDs to user's purchased audios
             await updateUser(userObjectId, {
@@ -71,8 +71,33 @@ export async function POST(req) {
             console.log(`✅ Added ${audioIds.length} audios to user ${userObjectId} purchasedAudios array`)
           } else if (audioId) {
             // Handle single audio purchase
+            await createPayment({
+              userId: userObjectId,
+              stripePaymentId: session.payment_intent,
+              amount: session.amount_total / 100, // Convert from cents to dollars
+              currency: session.currency,
+              status: "succeeded",
+              type: "one-time",
+              metadata: session.metadata || {},
+              audioId: new ObjectId(audioId), // Save single audio ID
+            })
+            
             await updateUser(userObjectId, {
               $addToSet: { purchasedAudios: new ObjectId(audioId) },
+            })
+            
+            console.log(`✅ Added audio ${audioId} to user ${userObjectId} purchasedAudios array`)
+          } else {
+            // No audio purchase (shouldn't happen for payment mode, but just in case)
+            await createPayment({
+              userId: userObjectId,
+              stripePaymentId: session.payment_intent,
+              amount: session.amount_total / 100,
+              currency: session.currency,
+              status: "succeeded",
+              type: "one-time",
+              metadata: session.metadata || {},
+              audioId: null,
             })
           }
         } 
@@ -100,30 +125,21 @@ export async function POST(req) {
         else if (session.mode === "subscription") {
           // Handle subscription payment
           const subscription = await stripe.subscriptions.retrieve(session.subscription)
-          console.log("🔔 Subscription data from checkout:", {
-            id: subscription.id,
-            status: subscription.status,
-            customer: subscription.customer
-          });
 
           // Check if user already has an active subscription and cancel it
           const existingActiveSubscription = await findActiveSubscriptionByUserId(userObjectId);
           if (existingActiveSubscription) {
-            console.log("🔄 Found existing active subscription, canceling it:", existingActiveSubscription.stripeSubscriptionId);
-            
             try {
               // Cancel the existing subscription in Stripe
               await stripe.subscriptions.cancel(existingActiveSubscription.stripeSubscriptionId);
-              console.log("✅ Successfully canceled previous subscription in Stripe");
               
               // Update the subscription status in our database
               await updateSubscriptionByStripeId(existingActiveSubscription.stripeSubscriptionId, {
                 status: "canceled",
                 canceledAt: new Date(),
               });
-              console.log("✅ Updated previous subscription status in database");
             } catch (error) {
-              console.error("❌ Error canceling previous subscription:", error);
+              console.error("Error canceling previous subscription:", error);
               // Continue with new subscription creation even if cancellation fails
             }
           }
@@ -159,14 +175,13 @@ export async function POST(req) {
             subscription: 'premium'
           })
 
-          console.log("Subscription created and user updated successfully");
+          console.log(`✅ Subscription created for user ${userObjectId}`)
         }
         break
       }
 
       case "invoice.payment_succeeded": {
         const invoice = event.data.object
-        console.log("🔔 invoice.payment_succeeded triggered for subscription:", invoice.subscription)
 
         if (invoice.subscription) {
           // Find the user ID from the subscription
@@ -184,13 +199,26 @@ export async function POST(req) {
               metadata: invoice.metadata || {},
             })
 
+            // Fetch the latest subscription data from Stripe to get updated period dates
+            const stripeSubscription = await stripe.subscriptions.retrieve(invoice.subscription)
+
+            // Update subscription period dates in database
+            if (stripeSubscription.current_period_start && stripeSubscription.current_period_end) {
+              await updateSubscriptionByStripeId(invoice.subscription, {
+                status: stripeSubscription.status,
+                currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
+                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+              })
+            }
+
             // Ensure user has active subscription status after successful payment
             await updateUser(subscription.userId, {
               hasActiveSubscription: true,
               subscription: 'premium'
             })
 
-            console.log(`✅ Subscription payment succeeded for user ${subscription.userId}, status updated to active`)
+            console.log(`✅ Subscription payment succeeded for user ${subscription.userId}`)
           }
         }
         break
@@ -211,51 +239,62 @@ export async function POST(req) {
 
       case "customer.subscription.created": {
         const subscription = event.data.object
-        console.log("🔔 customer.subscription.created triggered (likely a renewal):", subscription.id)
 
         // This event is triggered when a subscription is created or renewed
-        // We should ensure the user has active status
         const existingSubscription = await findSubscriptionByStripeId(subscription.id)
         
         if (existingSubscription) {
+          // Update subscription period dates
+          if (subscription.current_period_start && subscription.current_period_end) {
+            await updateSubscriptionByStripeId(subscription.id, {
+              status: subscription.status,
+              currentPeriodStart: new Date(subscription.current_period_start * 1000),
+              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            })
+          }
+
           await updateUser(existingSubscription.userId, {
             hasActiveSubscription: true,
             subscription: 'premium'
           })
-          console.log(`✅ Subscription renewed for user ${existingSubscription.userId}, status updated to active`)
+          
+          console.log(`✅ Subscription renewed for user ${existingSubscription.userId}`)
         }
         break
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object;
-        console.log("🔔 customer.subscription.updated triggered");
-        console.log("📦 Subscription update data:", {
-          id: subscription.id,
-          status: subscription.status,
-          billing_cycle_anchor: subscription.billing_cycle_anchor,
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          canceled_at: subscription.canceled_at
-        });
 
         try {
-          // Calculate period dates with fallback
-            const currentPeriodStart = subscription.current_period_start
-            ? new Date(subscription.current_period_start * 1000)
-            : new Date(subscription.billing_cycle_anchor * 1000);
+          let currentPeriodStart, currentPeriodEnd;
 
-          const currentPeriodEnd = subscription.current_period_end
-            ? new Date(subscription.current_period_end * 1000)
-            : (() => {
-                const end = new Date(subscription.billing_cycle_anchor * 1000);
-                end.setMonth(end.getMonth() + 1);
-                return end;
-              })();
-
-          console.log("Calculated dates:", {
-            currentPeriodStart,
-            currentPeriodEnd
-          });
+          // Try to get period dates from top-level subscription object
+          if (subscription.current_period_start && subscription.current_period_end) {
+            currentPeriodStart = new Date(subscription.current_period_start * 1000);
+            currentPeriodEnd = new Date(subscription.current_period_end * 1000);
+          } 
+          // Try to get from subscription items (fallback for some webhook events)
+          else if (subscription.items?.data?.[0]?.current_period_start && subscription.items?.data?.[0]?.current_period_end) {
+            currentPeriodStart = new Date(subscription.items.data[0].current_period_start * 1000);
+            currentPeriodEnd = new Date(subscription.items.data[0].current_period_end * 1000);
+          }
+          // If still not available, fetch from Stripe API
+          else {
+            const stripeSubscription = await stripe.subscriptions.retrieve(subscription.id);
+            
+            if (stripeSubscription.current_period_start && stripeSubscription.current_period_end) {
+              currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
+              currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+            } else {
+              // Fallback to billing cycle anchor
+              console.error("WARNING: Could not find period dates, using billing_cycle_anchor as fallback");
+              currentPeriodStart = new Date(subscription.billing_cycle_anchor * 1000);
+              currentPeriodEnd = new Date(subscription.billing_cycle_anchor * 1000);
+              currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+            }
+          }
 
           await updateSubscriptionByStripeId(subscription.id, {
             status: subscription.status,
@@ -267,7 +306,7 @@ export async function POST(req) {
             }),
           });
 
-          console.log(`Updated subscription ${subscription.id} data successfully`);
+          console.log(`✅ Updated subscription ${subscription.id}`);
         } catch (error) {
           console.error("Error processing subscription update:", error);
         }
@@ -296,7 +335,6 @@ export async function POST(req) {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object
-        console.log("🔔 invoice.payment_failed triggered for subscription:", invoice.subscription)
 
         if (invoice.subscription) {
           const subscription = await findSubscriptionByStripeId(invoice.subscription)
@@ -313,7 +351,7 @@ export async function POST(req) {
               subscription: 'free'
             })
 
-            console.log(`Payment failed for subscription ${invoice.subscription}, user status updated to inactive`)
+            console.log(`❌ Payment failed for subscription ${invoice.subscription}`)
           }
         }
         break
@@ -321,7 +359,6 @@ export async function POST(req) {
 
       case "customer.subscription.paused": {
         const subscription = event.data.object
-        console.log("🔔 customer.subscription.paused triggered")
 
         const existingSubscription = await findSubscriptionByStripeId(subscription.id)
         
@@ -335,13 +372,14 @@ export async function POST(req) {
             hasActiveSubscription: false,
             subscription: 'free'
           })
+          
+          console.log(`⏸️ Subscription paused for user ${existingSubscription.userId}`)
         }
         break
       }
 
       case "customer.subscription.resumed": {
         const subscription = event.data.object
-        console.log("🔔 customer.subscription.resumed triggered")
 
         const existingSubscription = await findSubscriptionByStripeId(subscription.id)
         
@@ -355,6 +393,8 @@ export async function POST(req) {
             hasActiveSubscription: true,
             subscription: 'premium'
           })
+          
+          console.log(`▶️ Subscription resumed for user ${existingSubscription.userId}`)
         }
         break
       }

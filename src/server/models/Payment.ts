@@ -11,7 +11,7 @@ export interface Payment {
   status: "succeeded" | "pending" | "failed"
   type: "one-time" | "subscription"
   metadata: Record<string, any>
-  audioId?: ObjectId
+  audioId?: ObjectId | ObjectId[] // Support both single audio and multiple audios
   createdAt: Date
   updatedAt?: Date
 }
