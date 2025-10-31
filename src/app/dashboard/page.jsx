@@ -19,8 +19,12 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDistanceToNow, format } from "date-fns"
 import AllTracksSection from "@/components/dashboard/AllTracksSection"
+import { useRouter } from "next/navigation"
 
 export default function DashboardPage() {
+  const router = useRouter()
+  router.push("/dashboard/audios")
+  return null
   const { user, requireAuth } = useAuth()
   const [audios, setAudios] = useState([])
   const [favoriteAudios, setFavoriteAudios] = useState([])

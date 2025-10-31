@@ -18,7 +18,12 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
   const [showAudioSelectionPopup, setShowAudioSelectionPopup] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [reactivating, setReactivating] = useState(false)
+  const [updatingPayment, setUpdatingPayment] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState(null)
   const { user } = useAuth()
+
+  console.log(paymentMethod);
+  
 
   useEffect(() => {
     fetchActiveSubscription()
@@ -35,11 +40,38 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
           sub => sub.status === 'active' && new Date(sub.currentPeriodEnd) > new Date()
         )
         setSubscription(activeSubscription)
+        
+        // Fetch payment method if subscription exists
+        if (activeSubscription?.stripeSubscriptionId) {
+          await fetchPaymentMethod(activeSubscription.stripeSubscriptionId)
+        }
       }
     } catch (error) {
       console.error("Error fetching subscription:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPaymentMethod = async (subscriptionId) => {
+    try {
+      const response = await fetch(`/api/stripe/get-payment-method?subscriptionId=${subscriptionId}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        if (data.paymentMethod) {
+          setPaymentMethod(data.paymentMethod)
+        } else {
+          console.log("No payment method found for subscription:", subscriptionId)
+          setPaymentMethod(null)
+        }
+      } else {
+        console.error("Error fetching payment method:", data.error)
+        setPaymentMethod(null)
+      }
+    } catch (error) {
+      console.error("Error fetching payment method:", error)
+      setPaymentMethod(null)
     }
   }
 
@@ -131,6 +163,51 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
       console.error("Error reactivating subscription:", error)
     } finally {
       setReactivating(false)
+    }
+  }
+
+  const handleUpdatePayment = async () => {
+    try {
+      setUpdatingPayment(true)
+      
+      if (!subscription?.stripeSubscriptionId) {
+        console.error("No subscription ID found")
+        alert("Subscription not found. Please try again.")
+        return
+      }
+
+      // Call the create portal session API
+      const response = await fetch("/api/stripe/create-portal-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          subscriptionId: subscription.stripeSubscriptionId 
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Redirect to Stripe Billing Portal
+        window.location.href = data.url
+      } else {
+        const data = await response.json()
+        console.error("Failed to create portal session:", data.error)
+        
+        // Handle specific error cases
+        if (data.stripeError === "BILLING_PORTAL_NOT_CONFIGURED") {
+          alert(
+            "Payment portal is not yet configured. Please contact support to set up payment updates.\n\n" +
+            "If you're an admin, configure the Customer Portal in Stripe Dashboard → Settings → Billing → Customer portal"
+          )
+        } else {
+          alert(`Failed to open payment update page: ${data.error || "Please try again."}`)
+        }
+      }
+    } catch (error) {
+      console.error("Error updating payment:", error)
+      alert("Error updating payment. Please try again.")
+    } finally {
+      setUpdatingPayment(false)
     }
   }
 
@@ -337,65 +414,98 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
             </div>
 
             {/* Right side - Details */}
-            <div className="flex-1 p-4 md:p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-1">
-                  Sublmnl Membership
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Badge variant="default" className="bg-green-500">
-                    Active
-                  </Badge>
-                  <Badge variant="default" className={`${subscription.cancelAtPeriodEnd ? "bg-red-500" : "bg-neutral-700 text-white"}`}>
-                    {subscription.cancelAtPeriodEnd
-                    ? "Cancels at period end"
-                    : "Renews automatically"}
-                  </Badge>
+            <div className="flex flex-col justify-between w-full">
+              <div className="p-4 md:p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mb-1">
+                      Sublmnl Membership
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="default" className="bg-green-500">
+                        Active
+                      </Badge>
+                      <Badge variant="default" className={`${subscription.cancelAtPeriodEnd ? "bg-red-500" : "bg-neutral-700 text-white"}`}>
+                        {subscription.cancelAtPeriodEnd
+                        ? "Cancels at period end"
+                        : "Renews automatically"}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CalendarCheck className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Plan:</span>
+                      <span className="ml-2 font-medium">Monthly</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <CreditCard className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Price:</span>
+                      <span className="ml-2 font-medium">CAD $7.99/month</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Renewal date:</span>
+                      <span className="ml-2 font-medium">
+                        {subscription.cancelAtPeriodEnd ? "No auto renewal" : format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Current period :</span>
+                      <span className="ml-2 font-medium">
+                        {format(new Date(subscription.currentPeriodStart), "MMM dd, yyyy")} - {format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="flex items-center justify-between gap-3 px-4 md:px-6 py-2 bg-gray-800">
+                {paymentMethod && (
+                  <div className="flex items-center gap-2 text-sm text-white">
+                    <CreditCard className="h-4 w-4" />
+                    <span className="font-mono text-white">
+                      **** **** {paymentMethod.last4}
+                    </span>
+                    <span className="capitalize text-xs text-white">
+                      {paymentMethod.brand}
+                    </span>
+                  </div>
+                )}
+                <Button 
+                  variant="outline" 
+                  onClick={handleUpdatePayment}
+                  disabled={updatingPayment}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto ms-auto"
+                >
+                  {updatingPayment ? (
+                    <>
+                      <div className="animate-spin h-4 w-4 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                      Opening...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" />
+                      Update Payment
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <CalendarCheck className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Plan:</span>
-                  <span className="ml-2 font-medium">Monthly</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <CreditCard className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Price:</span>
-                  <span className="ml-2 font-medium">CAD $7.99/month</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Renewal date:</span>
-                  <span className="ml-2 font-medium">
-                    {subscription.cancelAtPeriodEnd ? "No auto renewal" : format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Current period :</span>
-                  <span className="ml-2 font-medium">
-                    {format(new Date(subscription.currentPeriodStart), "MMM dd, yyyy")} - {format(new Date(subscription.currentPeriodEnd), "MMM dd, yyyy")}
-                  </span>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
         </div>
 
         {/* Manage Subscription Plan Section */}
@@ -438,16 +548,15 @@ export function ActiveSubscriptionCard({ onManagementStateChange }) {
                 </Button>
               ) : (
                 <Button 
-              variant="outline" 
-              onClick={handleManageSubscription}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <Settings className="h-4 w-4" />
-              Manage Subscription
-            </Button>
+                  variant="outline" 
+                  onClick={handleManageSubscription}
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <Settings className="h-4 w-4" />
+                  Manage Subscription
+                </Button>
             )
             }
-            
           </div>
         </div>
       </CardContent>

@@ -11,8 +11,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useSearchParams } from "next/navigation"
 import { saveAudioToLibrary } from "@/lib/audio-utils"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function UserAudiosPage() {
+  const router = useRouter()
   const searchParams = useSearchParams();
   const tabFromUrl = searchParams.get("tab");
   const { user } = useAuth()
@@ -369,7 +371,7 @@ export default function UserAudiosPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">My Audio Library</h1>
         <Button
-          onClick={() => (window.location.href = "/create")}
+          onClick={() => (router.push("/create"))}
           className="flex items-center gap-2 bg-gray-200 text-gray-900 hover:bg-gray-300"
         >
           <Plus className="h-4 w-4" />

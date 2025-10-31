@@ -68,7 +68,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/dashboard"
+                  href="/dashboard/audios"
                   className="text-gray-400 transition-colors hover:text-gray-200"
                   style={{ "&:hover": { color: primaryColor } }}
                 >

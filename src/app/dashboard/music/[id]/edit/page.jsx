@@ -35,7 +35,7 @@ export default function EditMusicPage({ params }) {
   // Check if user is admin
   useEffect(() => {
     if (user && user.role !== "admin") {
-      router.push("/dashboard")
+      router.push("/dashboard/audios")
     }
   }, [user, router])
 

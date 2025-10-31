@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import { ThemedButton } from "@/components/ui/themed-button";
 import SimpleAudioPlayer from "@/components/SimpleAudioPlayer";
 import CountUp from "react-countup";
@@ -75,6 +77,15 @@ function useContent(type, options = {}) {
 export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const { currentTheme } = useTheme();
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect logged-in users to dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard/audios");
+    }
+  }, [user, loading, router]);
 
   // Refs for animations
   const featuresRef = useRef(null);
@@ -130,10 +141,6 @@ export default function Home() {
     { limit: 1 }
   );
 
-  console.log(
-    contentBlocksContent,
-    "contentBlocksContentcontentBlocksContentcontentBlocksContent"
-  );
   useEffect(() => {
     setIsVisible(true);
   }, []);
@@ -287,10 +294,10 @@ export default function Home() {
   const getHeroData = () => {
     if (heroLoading || !heroContent.length) {
       return {
-        badge: "Reprogram Your Mind with Sublmnl",
-        title: "Music that makes your dreams come true. Literally.",
+        badge: "The Shortcut to Your Subconscious",
+        title: "Manifest your dream life. Just press play.",
         subtitle:
-          "Manifest your dream life without lifting a finger... okay, maybe just to put your headphones in.",
+          "Personalized subliminal affirmations - powered by AI and grounded in cognitive science.",
         buttonText: "How it Works",
         buttonLink: "#AffirmationsWork",
       };
@@ -515,19 +522,20 @@ export default function Home() {
     if (contentBlocksLoading || !contentBlocksContent.length) {
       return {
         leftLayoutBlock: {
-          title: "Affirmations work.",
+          title: "Affirmations are powerful, but not if your mind rejects them.",
           content:
-            "And while they can be powerful, repeating statements that you know aren't true can feel disingenuous.",
+            "<p style=\"margin-bottom: 20px;\">You might tell yourself:</p>\n\n<p style=\"margin-bottom: 20px; font-style: italic; font-weight: bold;\">\n“I’m living my dream life in a NYC penthouse with my perfect partner ”</p>\n\n<p style=\"margin-bottom: 4px;\">But if your conscious whispers “not yet,” it overrides the message.</p>\n\n<p>That’s why most affirmations stop at the surface .</p>",
           image: "/images/ThinkingGirl.png",
         },
         rightLayoutBlock: {
           title:
-            "Subliminal affirmations are positive messages embedded beneath music at a volume below conscious awareness.",
+            "Sublmnl goes deeper - speaking directly to the part of your mind that decides what’s true.",
           content:
-            "Because you can't hear them, your conscious mind doesn't reject them – they go straight to your subconscious.",
+            "<p style=\"margin-bottom: 8px;\">\nSublmnl blends personalized affirmations beneath music — inaudible to your conscious mind but absorbed by your subconscious — and infuses each track with solfeggio frequencies, tones believed to influence cellular harmony and transformation.\n</p>\n\n<p>\nNo scripting. No 5 a.m. routines. Just your headphones.<br>\nIt’s manifestation, made effortless.\n</p>",
         },
       };
     }
+
 
     let leftLayoutBlock = null;
     let rightLayoutBlock = null;
@@ -807,8 +815,8 @@ export default function Home() {
 
       {/* Subliminal Section */}
       <section className="mt-20 mb-20 relative w-full " ref={subliminalRef}>
-        <div className="max-w-7xl mx-auto container relative w-full rounded-[30px] min-h-[650px]  md:bg-[linear-gradient(to_bottom,#0f263c_50%,#1a3453_75%,#091a2b_100%)]">
-          <div className="w-full">
+        <div className="max-w-7xl mx-auto container relative w-full rounded-[30px] min-h-[650px]  md:bg-[linear-gradient(to_bottom,#0f263c_50%,#1a3351d4_75%,#091a2b_100%)] md:flex items-center">
+          <div className="w-full md:flex items-center">
             {/* Left side - Image */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -840,7 +848,7 @@ export default function Home() {
                   : { opacity: 0, x: 50 }
               }
               transition={{ duration: 0.8 }}
-              className="text-gray-400 min-h-[500px] md:w-[45%] rounded-3xl ms-auto md:absolute z-10 md:right-[5%] top-[50px] bg-black/50 "
+              className="text-gray-400 min-h-[500px] md:w-[45%] rounded-3xl ms-auto md:absolute z-10 md:right-[5%] bg-black/50"
             >
               <div className="space-y-3 p-6 md:p-12 ">
                 <motion.p
@@ -855,32 +863,6 @@ export default function Home() {
                 >
                   {contentBlocks.rightLayoutBlock?.title}{" "}
                 </motion.p>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={
-                    isSubliminalInView
-                      ? { opacity: 1, y: 0 }
-                      : { opacity: 0, y: 20 }
-                  }
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="text-white/80 mb-6 text-lg"
-                >
-                  {subliminalHeader?.content ||
-                    contentBlocks.subliminal?.content ||
-                    "Because you can't hear them, your conscious mind doesn't reject them – they go straight to your subconscious."}
-                </motion.p>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={
-                    isSubliminalInView
-                      ? { opacity: 1, y: 0 }
-                      : { opacity: 0, y: 20 }
-                  }
-                  transition={{ duration: 0.5, delay: 0.3 }}
-                  className="text-white/80 mb-6 text-lg"
-                >
-                  And that's where manifestation happens.
-                </motion.p>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={
@@ -888,28 +870,15 @@ export default function Home() {
                       ? { opacity: 1, y: 0 }
                       : { opacity: 0, y: 20 }
                   }
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  className=""
-                >
-                  <blockquote className="text-white/80 text-lg font-medium rounded-xl">
-                    <span className="text-white text-lg">With Sublmnl,</span>{" "}
-                    you can create a custom subliminal affirmation audio track
-                    tailored to your specific goals.
-                  </blockquote>
-                </motion.div>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={
-                    isSubliminalInView
-                      ? { opacity: 1, y: 0 }
-                      : { opacity: 0, y: 20 }
-                  }
-                  transition={{ duration: 0.5, delay: 0.5 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
                   className="text-white/80 mb-6 text-lg"
                 >
-                  So, scroll down, type in your desires, pick your favorite
-                  tune, and let the music do the heavy lifting.
-                </motion.p>
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: contentBlocks.rightLayoutBlock?.content || "",
+                    }}
+                  />
+                </motion.div>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={
@@ -920,11 +889,14 @@ export default function Home() {
                   transition={{ duration: 0.5, delay: 0.6 }}
                 >
                   <ThemedButton
-                    href="/create"
+                    href={
+                      contentBlocks.rightLayoutBlock?.buttonLink || "/create"
+                    }
                     className="w-full mt-6 md:w-auto bg-gradient-to-r from-[#ffc2f2] to-[#d21e87] text-gray-900 hover:font-bold"
                     variant=""
                   >
-                    Create Your First Track
+                    {contentBlocks.rightLayoutBlock?.buttonText ||
+                      "Create Your First Track"}
                   </ThemedButton>
                 </motion.div>
               </div>
@@ -1184,9 +1156,6 @@ export default function Home() {
                     }}
                     className="absolute inset-0 flex items-center justify-center"
                   >
-                    {console.log(
-                      renderLucideIcon(category.icon, "w-16 h-16 text-white/40")
-                    )}
                     {renderLucideIcon(category.icon, "w-16 h-16 text-white/40")}
                   </motion.div>
                 </motion.div>

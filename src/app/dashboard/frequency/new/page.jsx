@@ -36,7 +36,7 @@ export default function NewFrequencyPage() {
 
   // Redirect if not admin
   if (user && user.role !== "admin") {
-    router.push("/dashboard")
+    router.push("/dashboard/audios")
     return null
   }
 

@@ -7,6 +7,7 @@ import { ActiveSubscriptionCard } from "@/components/stripe/account/ActiveSubscr
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { PaymentsTable } from "@/components/stripe/admin/PaymentsTable"
 
 export default function UserSubscriptionsPage() {
   const [showAllSubscriptions, setShowAllSubscriptions] = useState(false)
@@ -34,12 +35,12 @@ export default function UserSubscriptionsPage() {
               {showAllSubscriptions ? (
                 <>
                   <ChevronUp className="h-4 w-4" />
-                  Hide All Subscriptions
+                  Hide All Subscriptions & Payments
                 </>
               ) : (
                 <>
                   <ChevronDown className="h-4 w-4" />
-                  View All Subscriptions
+                  View All Subscriptions & Payments
                 </>
               )}
             </Button>
@@ -49,6 +50,7 @@ export default function UserSubscriptionsPage() {
 
       {/* All Subscriptions Table - Only show when management screen is not active */}
       {!isManagementScreenActive && showAllSubscriptions && (
+        <>
         <Card>
           <CardHeader>
             <CardTitle>All Subscriptions</CardTitle>
@@ -58,6 +60,16 @@ export default function UserSubscriptionsPage() {
             <SubscriptionsTable isAdmin={false} />
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>All Payments</CardTitle>
+            <CardDescription>View and manage all your payment transactions</CardDescription>
+          </CardHeader>
+          <CardContent>
+          <PaymentsTable isAdmin={false} />
+          </CardContent>
+        </Card>
+        </>
       )}
     </div>
   )

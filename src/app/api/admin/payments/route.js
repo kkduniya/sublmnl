@@ -2,8 +2,8 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { NextResponse } from "next/server"
 import { connectToDatabase } from "@/server/db"
-import { findAllPayments, findUserPayments } from "@/server/models/Payment"
 import { findUserById } from "@/server/models/user"
+import { ObjectId as ObjectIdClass } from "mongodb"
 
 export async function GET(req) {
   try {
@@ -13,46 +13,72 @@ export async function GET(req) {
       return NextResponse.json({ error: "not_logged_in" }, { status: 401 })
     }
 
-    await connectToDatabase()
+    const db = await connectToDatabase()
 
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get("userId")
     const isAdmin = searchParams.get("admin") === "true"
+    const page = parseInt(searchParams.get("page") || "1", 10)
+    const limit = parseInt(searchParams.get("limit") || "10", 10)
+    const searchTerm = searchParams.get("search") || ""
+    const statusFilter = searchParams.get("status") || "all"
+    const typeFilter = searchParams.get("type") || "all"
 
     // Get current user to check admin status
     const currentUser = await findUserById(session.user.id)
-  console.log(`Current user:231231`, currentUser, session.user.id)
+    console.log(`Current user:231231`, currentUser, session.user.id)
     // Check if user is admin for admin routes
     if (isAdmin && currentUser?.role !== "admin") {
       return NextResponse.json({ error: "unauthorized - admin access required" }, { status: 403 })
     }
 
-    let payments
+    // Build query filter
+    let queryFilter = {}
 
-    if (isAdmin && !userId) {
-      // ADMIN: Get ALL payments from ALL users
-      console.log("Admin requesting ALL payments from ALL users")
-      payments = await findAllPayments()
-    } else if (isAdmin && userId) {
+    // User filter
+    if (isAdmin && userId) {
       // ADMIN: Get payments for a specific user
-      console.log(`Admin requesting payments for user: ${userId}`)
-      payments = await findUserPayments(userId)
-    } else if (userId && userId === session.user.id) {
+      queryFilter.userId = new ObjectIdClass(userId)
+    } else if (!isAdmin || (userId && userId !== session.user.id)) {
       // USER: Get their own payments only
-      console.log(`User requesting their own payments: ${userId}`)
-      payments = await findUserPayments(session.user.id)
-    } else if (!userId) {
-      // USER: Get their own payments (default)
-      console.log(`User requesting their own payments (default): ${session.user.id}`)
-      payments = await findUserPayments(session.user.id)
-    } else {
-      // USER trying to access someone else's payments - FORBIDDEN
-      return NextResponse.json({ error: "unauthorized - cannot access other user's payments" }, { status: 403 })
+      if (userId && userId !== session.user.id) {
+        return NextResponse.json({ error: "unauthorized - cannot access other user's payments" }, { status: 403 })
+      }
+      queryFilter.userId = new ObjectIdClass(session.user.id)
     }
 
-    // For admin view, populate user data for ALL payments
+    // Status filter
+    if (statusFilter !== "all") {
+      queryFilter.status = statusFilter
+    }
+
+    // Type filter
+    if (typeFilter !== "all") {
+      queryFilter.type = typeFilter
+    }
+
+    // Search filter - search by stripePaymentId (for user email/name, would require aggregation)
+    if (searchTerm) {
+      queryFilter.stripePaymentId = { $regex: searchTerm, $options: "i" }
+    }
+
+    // Get total count for pagination
+    const totalCount = await db.collection("payments").countDocuments(queryFilter)
+
+    // Calculate skip
+    const skip = (page - 1) * limit
+
+    // Fetch paginated payments
+    let payments = await db
+      .collection("payments")
+      .find(queryFilter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray()
+
+    // For admin view, populate user data
     if (isAdmin) {
-      console.log(`Populating user data for ${payments.length} payments`)
       const userIds = [...new Set(payments.map((p) => p.userId.toString()))]
       const users = await Promise.all(userIds.map((id) => findUserById(id)))
       const userMap = users.reduce((acc, user) => {
@@ -66,10 +92,20 @@ export async function GET(req) {
       }))
     }
 
-    console.log(`Returning ${payments.length} payments`)
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit)
+
+    console.log(`Returning ${payments.length} payments (page ${page} of ${totalPages})`)
     return NextResponse.json({
       payments,
-      totalCount: payments.length,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
       isAdmin: isAdmin,
     })
   } catch (error) {

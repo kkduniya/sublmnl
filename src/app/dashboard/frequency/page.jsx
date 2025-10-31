@@ -22,7 +22,7 @@ export default function FrequencyPage() {
   useEffect(() => {
     // Redirect if not admin
     if (user && user.role !== "admin") {
-      router.push("/dashboard")
+      router.push("/dashboard/audios")
     }
 
     const fetchFrequencies = async () => {

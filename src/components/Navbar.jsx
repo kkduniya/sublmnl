@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useTheme } from "@/context/ThemeContext"
 import Image from "next/image"
 
-export default function Navbar() {
+export default function Navbar({ from }) {
   const [isOpen, setIsOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -62,17 +62,19 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`${pathname=="/" ? "fixed" : "relative"} w-full z-50 transition-all duration-300 ${
-        scrolled ? "bg-[#000]/70 backdrop-blur-md shadow-md" : "bg-transparent"
+      className={`${pathname=="/" ? "fixed" : from === "dashboard" ? "relative" : "relative"} w-full z-50 transition-all duration-300 ${
+        from === "dashboard" ? "bg-gray-900 border-b border-gray-800" : scrolled ? "bg-[#000]/70 backdrop-blur-md shadow-md" : "bg-transparent"
       }`}
       style={cssVars}
     >
-      <div className="container mx-auto px-6 py-5 mb-0">
+      <div className={`${from === "dashboard" ? "py-[22px]" : "container mx-auto py-5"} px-6 mb-0`}>
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 justify-between">
             <div
               className="rounded-full"
             >
+              {
+                from === "dashboard" ? "" :
               <Image
                   src={"/images/logowhiteNew.png"}
                   alt="Logo"
@@ -83,6 +85,7 @@ export default function Navbar() {
                     height: "auto",
                   }}
                 />
+              }
             </div>
           </Link>
 
@@ -94,8 +97,8 @@ export default function Navbar() {
                   href="/create"
                   className={`hover:text-opacity-80 transition-colors`}
                   style={{
-                    color: isActive("/create") ? "#1afbff" : "rgb(209, 213, 219)",
-                    "&:hover": { color: primaryColor },
+                    color: isActive("/create") ? from === "dashboard" ? "#b1d239" : "#1afbff" : "rgb(209, 213, 219)",
+                    "&:hover": { color: from === "dashboard" ? "#b1d239" : primaryColor },
                   }}
                 >
                   Create Audio
@@ -125,6 +128,8 @@ export default function Navbar() {
             >
               Pricing
             </Link> */}
+            {
+              from !== "dashboard" &&
             <Link
               href="/faq"
               className="text-gray-300 hover:text-opacity-80 font-medium transition-colors"
@@ -135,6 +140,11 @@ export default function Navbar() {
             >
               FAQ
             </Link>
+            }
+
+
+            {
+              from !== "dashboard" &&
             <Link
               href="/contact"
               className={`hover:text-opacity-80 transition-colors ${isActive("/contact") ? "text-opacity-100" : "text-opacity-90"}`}
@@ -146,6 +156,7 @@ export default function Navbar() {
             >
               Contact Us
             </Link>
+            }
 
             {user ? (
               <div className="relative">
@@ -169,7 +180,7 @@ export default function Navbar() {
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50">
                     <Link
-                      href="/profile"
+                      href="/dashboard/profile"
                       className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                       onClick={() => setUserMenuOpen(false)}
                     >
@@ -296,9 +307,9 @@ export default function Navbar() {
                     Dashboard
                   </Link> */}
                   <Link
-                    href="/profile"
-                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
-                    style={{ color: isActive("/profile") ? primaryColor : "rgb(209, 213, 219)" }}
+                    href="/dashboard/profile"
+                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/dashboard/profile") ? "text-opacity-100" : "text-opacity-90"}`}
+                    style={{ color: isActive("/dashboard/profile") ? primaryColor : "rgb(209, 213, 219)" }}
                     onClick={() => {
                       setIsMenuOpen(false)
                       setIsOpen(false)
@@ -308,7 +319,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/dashboard/audios"
-                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
+                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/dashboard/audios") ? "text-opacity-100" : "text-opacity-90"}`}
                     style={{ color: isActive("/dashboard/audios") ? primaryColor : "rgb(209, 213, 219)" }}
                     onClick={() => {
                       setIsMenuOpen(false)
@@ -319,7 +330,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/dashboard/subscriptions"
-                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/profile") ? "text-opacity-100" : "text-opacity-90"}`}
+                    className={`hover:text-opacity-80 transition-colors px-4 py-2 rounded-lg hover:bg-gray-700 ${isActive("/dashboard/subscriptions") ? "text-opacity-100" : "text-opacity-90"}`}
                     style={{ color: isActive("/dashboard/subscriptions") ? primaryColor : "rgb(209, 213, 219)" }}
                     onClick={() => {
                       setIsMenuOpen(false)

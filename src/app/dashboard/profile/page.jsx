@@ -5,9 +5,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 
 export default function ProfilePage() {
-  const router = useRouter()
-  router.push("/dashboard/profile")
-  return null
   const { user, updateProfile, requireAuth } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
@@ -21,9 +18,11 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: "", text: "" })
   const [passwordMessage, setPasswordMessage] = useState({ type: "", text: "" })
+  const router = useRouter()
   const [showPasswordOptions, setShowPasswordOptions] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [subscription, setSubscription] = useState('free')
+  const [userProfileLoading, setUserProfileLoading] = useState(false)
 
   useEffect(() => {
     if (!requireAuth()) return
@@ -40,7 +39,7 @@ export default function ProfilePage() {
 
     const fetchUserProfile = async () => {
       try {
-
+        setUserProfileLoading(true)
         const response = await fetch("/api/user/profile", {
           method: "GET",
           headers: {
@@ -66,6 +65,8 @@ export default function ProfilePage() {
       } catch (error) {
         console.error("Error fetching user profile:", error.message)
         return null
+      } finally {
+        setUserProfileLoading(false)
       }
     }
 
@@ -150,8 +151,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="sm:min-h-screen py-12 px-6 md:px-12 flex justify-center items-center">
-      <div className="max-w-4xl mx-auto w-full">
+    <div className="container mx-auto sm:p-6">
+      {userProfileLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <>
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Your Profile</h1>
           {!isEditing && (
@@ -160,7 +166,7 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-
+      
         {message.text && (
           <div
             className={`p-4 mb-6 rounded-md ${message.type === "success"
@@ -422,7 +428,8 @@ export default function ProfilePage() {
             </div> */}
           </div>
         </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

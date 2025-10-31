@@ -75,18 +75,28 @@ export default function Sidebar({ isOpen, onClose }) {
   }
 
   const menuItems = [
+    // {
+    //   title: "Dashboard",
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+    //       <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+    //     </svg>
+    //   ),
+    //   href: "/dashboard",
+    //   forAll: true,
+    // },
     {
-      title: "Dashboard",
+      title: "Profile",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
         </svg>
       ),
-      href: "/dashboard",
+      href: "/dashboard/profile",
       forAll: true,
     },
     {
-      title: "My Audios",
+      title: "Library",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
@@ -95,34 +105,35 @@ export default function Sidebar({ isOpen, onClose }) {
       href: "/dashboard/audios",
       forAll: true,
     },
-    {
-      title: "Favorites",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fillRule="evenodd"
-            d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ),
-      href: "/dashboard/audios?tab=favorites",
-      forAll: true,
-    },
-    {
-      title: "Create New",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fillRule="evenodd"
-            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ),
-      href: "/create",
-      forAll: true,
-    },
+    
+    // {
+    //   title: "Favorites",
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+    //       <path
+    //         fillRule="evenodd"
+    //         d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+    //         clipRule="evenodd"
+    //       />
+    //     </svg>
+    //   ),
+    //   href: "/dashboard/audios?tab=favorites",
+    //   forAll: true,
+    // },
+    // {
+    //   title: "Create New",
+    //   icon: (
+    //     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+    //       <path
+    //         fillRule="evenodd"
+    //         d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+    //         clipRule="evenodd"
+    //       />
+    //     </svg>
+    //   ),
+    //   href: "/create",
+    //   forAll: true,
+    // },
     {
       title: "Music Library",
       icon: (
@@ -173,7 +184,7 @@ export default function Sidebar({ isOpen, onClose }) {
       forAdmin: true,
     },
     {
-      title: "Settings",
+      title: "Audio Settings",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path
@@ -184,7 +195,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </svg>
       ),
       href: "/dashboard/settings",
-      forAll: true,
+      forAdmin: true,
     },
     {
       title: "Themes",
@@ -195,20 +206,20 @@ export default function Sidebar({ isOpen, onClose }) {
       forAdmin: true,
     },
     {
-      title: "All Payments",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-dollar-sign-icon lucide-badge-dollar-sign"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 18V6" /></svg>
-      ),
-      href: isAdmin ? "/dashboard/admin/payments" : "/dashboard/payments",
-      forAll: true,
-    },
-    {
-      title: "My Subscriptions",
+      title: "Billing and Subscriptions",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-calendar-check-icon lucide-calendar-check"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /><path d="m9 16 2 2 4-4" /></svg>
       ),
       href: "/dashboard/subscriptions",
       forAll: true,
+    },
+    {
+      title: "All Payments",
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-dollar-sign-icon lucide-badge-dollar-sign"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" /><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" /><path d="M12 18V6" /></svg>
+      ),
+      href: isAdmin ? "/dashboard/admin/payments" : "/dashboard/payments",
+      forAdmin: true,
     },
     {
       title: "All Subscriptions",

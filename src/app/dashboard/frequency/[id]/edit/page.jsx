@@ -35,7 +35,7 @@ export default function EditFrequencyPage({ params }) {
   // Only admin can access
   useEffect(() => {
     if (user && user.role !== "admin") {
-      router.push("/dashboard")
+      router.push("/dashboard/audios")
     }
   }, [user, router])
 

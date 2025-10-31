@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import Link from "next/link"
@@ -17,11 +17,18 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
-  const { login, register } = useAuth()
+  const { login, register, user, loading } = useAuth()
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get('returnTo');
   const [showPassword, setShowPassword] = useState(false)
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      router.push("/dashboard/audios")
+    }
+  }, [user, loading, router])
 
 
   const handleSubmit = async (e) => {
@@ -37,7 +44,7 @@ export default function AuthPage() {
           if(returnTo === "create"){
             router.push("/pricing?returnTo=create");
           }else {
-            router.push("/dashboard")
+            router.push("/dashboard/audios")
           }
         } else {
           setError(result.error || "Login failed")

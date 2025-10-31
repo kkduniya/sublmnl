@@ -23,7 +23,7 @@ export default function MusicPage() {
   useEffect(() => {
     // Check if user is admin
     if (user && user.role !== "admin") {
-      router.push("/dashboard")
+      router.push("/dashboard/audios")
     }
 
     const fetchTracks = async () => {

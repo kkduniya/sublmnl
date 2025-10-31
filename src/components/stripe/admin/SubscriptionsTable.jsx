@@ -11,12 +11,30 @@ import { formatDistanceToNow, format } from "date-fns"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { useAuth } from "@/context/AuthContext"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 export function SubscriptionsTable({ isAdmin = false }) {
   const [subscriptions, setSubscriptions] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  })
   const { user } = useAuth()
 
   // State for dialogs
@@ -25,11 +43,16 @@ export function SubscriptionsTable({ isAdmin = false }) {
   const [selectedSubscription, setSelectedSubscription] = useState(null)
 
   useEffect(() => {
+    setPage(1) // Reset to page 1 when filters change
+  }, [searchTerm, statusFilter, isAdmin, user?.id])
+
+  useEffect(() => {
     fetchSubscriptions()
-  }, [isAdmin, user?.id])
+  }, [page, searchTerm, statusFilter, isAdmin, user?.id])
 
   const fetchSubscriptions = async () => {
     try {
+      setLoading(true)
       const params = new URLSearchParams()
       if (isAdmin) {
         params.append("admin", "true")
@@ -37,12 +60,17 @@ export function SubscriptionsTable({ isAdmin = false }) {
         // For user view, fetch their own subscriptions
         params.append("userId", user?.id)
       }
+      params.append("page", page.toString())
+      params.append("limit", "10")
+      if (searchTerm) params.append("search", searchTerm)
+      if (statusFilter !== "all") params.append("status", statusFilter)
 
       const response = await fetch(`/api/admin/subscriptions?${params}`)
       const data = await response.json()
 
       if (response.ok) {
         setSubscriptions(data.subscriptions)
+        setPagination(data.pagination || pagination)
       } else {
         console.error("Failed to fetch subscriptions:", data.error)
       }
@@ -94,16 +122,6 @@ export function SubscriptionsTable({ isAdmin = false }) {
     }
   }
 
-  const filteredSubscriptions = subscriptions.filter((subscription) => {
-    const matchesSearch =
-      subscription.stripeSubscriptionId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subscription.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      subscription.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = statusFilter === "all" || subscription.status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -174,14 +192,14 @@ export function SubscriptionsTable({ isAdmin = false }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredSubscriptions.length === 0 ? (
+            {subscriptions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   No subscriptions found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredSubscriptions.map((subscription) => (
+              subscriptions.map((subscription) => (
                 <TableRow key={subscription._id}>
                   <TableCell className="font-mono text-sm">{subscription.stripeSubscriptionId.slice(-12)}</TableCell>
                   {isAdmin && (
@@ -277,6 +295,64 @@ export function SubscriptionsTable({ isAdmin = false }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="">
+          <div className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} results
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.hasPrevPage) setPage((p) => Math.max(1, p - 1))
+                  }}
+                  className={!pagination.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNum
+                if (pagination.totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (pagination.page <= 3) {
+                  pageNum = i + 1
+                } else if (pagination.page >= pagination.totalPages - 2) {
+                  pageNum = pagination.totalPages - 4 + i
+                } else {
+                  pageNum = pagination.page - 2 + i
+                }
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setPage(pageNum)
+                      }}
+                      isActive={pagination.page === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.hasNextPage) setPage((p) => Math.min(pagination.totalPages, p + 1))
+                  }}
+                  className={!pagination.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   )
 }

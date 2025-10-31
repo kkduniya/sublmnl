@@ -3,10 +3,20 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search } from "lucide-react"
+import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 export function PaymentsTable({ isAdmin = false, userId }) {
   const [payments, setPayments] = useState([])
@@ -14,22 +24,42 @@ export function PaymentsTable({ isAdmin = false, userId }) {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
+  const [page, setPage] = useState(1)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalCount: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  })
+
+  useEffect(() => {
+    setPage(1) // Reset to page 1 when filters change
+  }, [searchTerm, statusFilter, typeFilter, isAdmin, userId])
 
   useEffect(() => {
     fetchPayments()
-  }, [isAdmin, userId])
+  }, [page, searchTerm, statusFilter, typeFilter, isAdmin, userId])
 
   const fetchPayments = async () => {
     try {
+      setLoading(true)
       const params = new URLSearchParams()
       if (isAdmin) params.append("admin", "true")
       if (userId) params.append("userId", userId)
+      params.append("page", page.toString())
+      params.append("limit", "10")
+      if (searchTerm) params.append("search", searchTerm)
+      if (statusFilter !== "all") params.append("status", statusFilter)
+      if (typeFilter !== "all") params.append("type", typeFilter)
 
       const response = await fetch(`/api/admin/payments?${params}`)
       const data = await response.json()
 
       if (response.ok) {
         setPayments(data.payments)
+        setPagination(data.pagination || pagination)
       } else {
         console.error("Failed to fetch payments:", data.error)
       }
@@ -39,18 +69,6 @@ export function PaymentsTable({ isAdmin = false, userId }) {
       setLoading(false)
     }
   }
-
-  const filteredPayments = payments.filter((payment) => {
-    const matchesSearch =
-      payment.stripePaymentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = statusFilter === "all" || payment.status === statusFilter
-    const matchesType = typeFilter === "all" || payment.type === typeFilter
-
-    return matchesSearch && matchesStatus && matchesType
-  })
 
   const getStatusBadge = (status) => {
     const variants = {
@@ -119,14 +137,14 @@ export function PaymentsTable({ isAdmin = false, userId }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredPayments.length === 0 ? (
+            {payments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isAdmin ? 7 : 6} className="text-center py-8 text-muted-foreground">
                   No payments found
                 </TableCell>
               </TableRow>
             ) : (
-              filteredPayments.map((payment) => (
+              payments.map((payment) => (
                 <TableRow key={payment._id}>
                   <TableCell className="font-mono text-sm">{payment.stripePaymentId?.slice(-12)}</TableCell>
                   {isAdmin && (
@@ -153,6 +171,64 @@ export function PaymentsTable({ isAdmin = false, userId }) {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="">
+          <div className="text-sm text-muted-foreground">
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of {pagination.totalCount} results
+          </div>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.hasPrevPage) setPage((p) => Math.max(1, p - 1))
+                  }}
+                  className={!pagination.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNum
+                if (pagination.totalPages <= 5) {
+                  pageNum = i + 1
+                } else if (pagination.page <= 3) {
+                  pageNum = i + 1
+                } else if (pagination.page >= pagination.totalPages - 2) {
+                  pageNum = pagination.totalPages - 4 + i
+                } else {
+                  pageNum = pagination.page - 2 + i
+                }
+                return (
+                  <PaginationItem key={pageNum}>
+                    <PaginationLink
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setPage(pageNum)
+                      }}
+                      isActive={pagination.page === pageNum}
+                      className="cursor-pointer"
+                    >
+                      {pageNum}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              })}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (pagination.hasNextPage) setPage((p) => Math.min(pagination.totalPages, p + 1))
+                  }}
+                  className={!pagination.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
     </div>
   )
 }

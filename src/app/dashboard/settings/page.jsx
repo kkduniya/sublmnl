@@ -259,7 +259,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto sm:p-6">
-      <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+      <h1 className="text-3xl font-bold mb-8">Audio Settings</h1>
 
       {message.text && (
         <div
@@ -272,8 +272,8 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="mb-6 bg-gray-800/50 p-1 rounded-lg">
+      {/* <Tabs defaultValue="profile" className="w-full"> */}
+        {/* <TabsList className="mb-6 bg-gray-800/50 p-1 rounded-lg">
           <TabsTrigger value="profile" className="rounded-md data-[state=active]:bg-gray-700">
             Profile
           </TabsTrigger>
@@ -286,9 +286,9 @@ export default function SettingsPage() {
               Audio Settings
             </TabsTrigger>
           }
-        </TabsList>
+        </TabsList> */}
 
-        <TabsContent value="profile">
+        {/* <TabsContent value="profile">
           {
             userProfileLoading ? 
             <div className="flex justify-center py-12">
@@ -410,12 +410,12 @@ export default function SettingsPage() {
               </button>
             </form>
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
         {
           isAdmin &&
-          <TabsContent value="audio">
-            {
+          // <TabsContent value="audio">
+            
               audioSettingsLoading ? 
               <div className="flex justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -527,10 +527,10 @@ export default function SettingsPage() {
                   </button>
                 </form>
               </div>
-            }
-          </TabsContent>
+            
+          // {/* </TabsContent> */}
         }
-      </Tabs>
+      {/* </Tabs> */}
     </div>
   )
 }
