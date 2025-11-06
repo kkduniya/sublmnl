@@ -39,7 +39,7 @@ export async function POST(request) {
     // === Subscribe to Klaviyo ===
     try {
       const API_KEY = process.env.KLAVIYO_PRIVATE_API_KEY;
-      const LIST_ID = "XweW7S"
+      const LIST_ID = "R9QVFw"
 
       // 1. Create/Update Profile
       const profileRes = await fetch("https://a.klaviyo.com/api/profiles", {

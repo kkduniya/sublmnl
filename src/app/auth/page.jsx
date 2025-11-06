@@ -24,11 +24,11 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
 
   // Redirect if already logged in
-  useEffect(() => {
-    if (!loading && user) {
-      router.push("/dashboard/audios")
-    }
-  }, [user, loading, router])
+  // useEffect(() => {
+  //   if (!loading && user) {
+  //     router.push("/dashboard/audios")
+  //   }
+  // }, [user, loading, router])
 
 
   const handleSubmit = async (e) => {

@@ -20,11 +20,11 @@ export default function SettingsPage() {
     confirmPassword: "",
   })
   const [audioSettings, setAudioSettings] = useState({
-    affirmationsVolume: 0.2,
-    frequencyVolume:0.5,
+    affirmationsVolume: 1.2,
+    frequencyVolume:3.5,
     repetitionInterval: 10,
     musicVolume: 1.0,
-    speed: 1,
+    speed: 2,
   })
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
@@ -236,10 +236,6 @@ export default function SettingsPage() {
 
         // Update localStorage for immediate effect
         localStorage.setItem("musicVolume", audioSettings.musicVolume.toString())
-        localStorage.setItem("affirmationsVolume", audioSettings.affirmationsVolume.toString())
-        localStorage.setItem("frequencyVolume", audioSettings.frequencyVolume.toString())
-        localStorage.setItem("repetitionInterval", audioSettings.repetitionInterval.toString())
-        localStorage.setItem("speed", audioSettings.speed.toString())
 
       } else {
         throw new Error(data.message || "Failed to update audio settings")
