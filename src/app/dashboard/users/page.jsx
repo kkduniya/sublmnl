@@ -5,6 +5,16 @@ import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ServerSideDataTable } from "@/components/ui/server-side-data-table"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function UserManagementPage() {
   const { user } = useAuth()
@@ -21,7 +31,11 @@ export default function UserManagementPage() {
   const [error, setError] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [sortConfig, setSortConfig] = useState({ field: "createdAt", order: "desc" })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const router = useRouter()
+  const [adminCount, setAdminCount] = useState(0)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -40,6 +54,7 @@ export default function UserManagementPage() {
       if (data.success) {
         setUsers(data.data)
         setPagination(data.pagination)
+        setAdminCount(data?.totalAdminCount)
       } else {
         setError(data.message || "Failed to fetch users")
       }
@@ -111,6 +126,40 @@ export default function UserManagementPage() {
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page on sort
   }
 
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setIsDeleting(true)
+      setError("")
+
+      const response = await fetch(`/api/admin/users?id=${userToDelete._id}`, {
+        method: "DELETE",
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setDeleteDialogOpen(false)
+        setUserToDelete(null)
+        // Refresh the users list
+        fetchUsers()
+      } else {
+        setError(data.message || "Failed to delete user")
+      }
+    } catch (error) {
+      setError("An error occurred while deleting user")
+      console.error(error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   // Define columns for the DataTable
   const columns = [
     {
@@ -131,9 +180,9 @@ export default function UserManagementPage() {
       sortable: true,
     },
     {
-      key: "subscription.plan",
+      key: "subscription",
       header: "Subscription",
-      render: (user) => <span className="capitalize">{user.subscription?.plan || "Free"}</span>,
+      render: (user) => <span className="capitalize">{user.subscription === "premium" ? "Sublmnl Membership" : "No active subscription" }</span>,
       sortable: true,
     },
     {
@@ -149,20 +198,27 @@ export default function UserManagementPage() {
         <div className="flex space-x-2">
           <button
             onClick={() => handleToggleAdmin(user._id, user.role === "admin")}
-            className={`px-3 py-1 rounded-md text-sm ${
+            className={`px-3 py-1 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
               user.role === "admin"
                 ? "bg-red-600/20 text-red-400 hover:bg-red-600/30"
                 : "bg-primary/20 text-primary hover:bg-primary/30"
             }`}
+            disabled={adminCount <= 1 && user.role === "admin"}
+            title={adminCount <= 1 && user.role === "admin" ? "You must have at least one admin" : ""}
           >
             {user.role === "admin" ? "Remove Admin" : "Make Admin"}
           </button>
-          {/* <Link
-            href={`/dashboard/users/${user._id}`}
-            className="px-3 py-1 bg-gray-700/50 hover:bg-gray-700 rounded-md text-sm"
-          >
-            View Details
-          </Link> */}
+          {
+            user.role !== "admin" && 
+            <button
+              onClick={() => handleDeleteClick(user)}
+              className={`px-3 py-1 rounded-md text-sm ${
+                "bg-red-600/20 text-red-400 hover:bg-red-600/30"
+              }`}
+            >
+              Delete User
+            </button>
+          }
         </div>
       ),
     },
@@ -207,6 +263,37 @@ export default function UserManagementPage() {
           />
         </div>
       )}
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-200">
+              Are you sure you want to delete <span className="font-semibold text-white">
+                {userToDelete ? `${userToDelete.firstName || ""} ${userToDelete.lastName || ""}`.trim() || userToDelete.email : ""}
+              </span>? 
+               This will:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Cancel all active subscriptions (at period end)</li>
+                <li>Delete all audios created by this user</li>
+                <li>Permanently delete the user account</li>
+              </ul>
+              <span className="font-semibold text-red-400 mt-2 block">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete User"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

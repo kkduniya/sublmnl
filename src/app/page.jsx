@@ -568,7 +568,7 @@ export default function Home() {
   const getCtaData = () => {
     if (loadingCtaContent || !ctaContent.length) {
       return {
-        title: "heje",
+        title: "Ready to Transform Your Mind?",
         subtitle:
           "Join thousands of users who are already experiencing the benefits of subliminal audio technology.",
         features: [
