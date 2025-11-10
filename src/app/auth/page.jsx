@@ -90,8 +90,8 @@ export default function AuthPage() {
           setError("")
           // You could also add a success message here
           toast({
-            title: "Success!!",
-            description: "Successfully Registration!!  Please login to continue.",
+            title: "Success",
+            description: "Successfully Registered! Please login to continue.",
             variant: "success",
           });
 
