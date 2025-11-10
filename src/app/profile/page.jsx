@@ -281,7 +281,7 @@ export default function ProfilePage() {
 
               <div>
                 <h3 className="text-sm font-medium text-gray-400 mb-1">Subscription Plan</h3>
-                <p className="text-lg capitalize">{subscription.toLowerCase() === "premium" ? "Sublmnl Membership" : "No active subscription"}</p>
+                <p className="text-lg capitalize">{typeof subscription === "string" &&subscription?.toLowerCase() === "premium" ? "Sublmnl Membership" : "No active subscription"}</p>
               </div>
             </div>
           )}
