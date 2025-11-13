@@ -333,7 +333,7 @@ export default function Home() {
           title: "Career & Success",
           description:
             "Boost your confidence, productivity, and leadership skills.",
-          icon: "M20 6h-3V4c0-1.103-.897-2-2-2H9c-1.103 0-2 .897-2 2v2H4c-1.103 0-2 .897-2 2v11c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V8c0-1.103-.897-2-2-2zm-5-2v2H9V4h6zM8 8h12v3H4V8h4zm-4 11V13h16v6H4z",
+          icon: "Briefcase",
           bgColor: "#0ef9fc",
           href: "/create?cid=career",
         },
@@ -341,7 +341,7 @@ export default function Home() {
           title: "Love & Relationships",
           description:
             "Attract healthy relationships and improve existing ones.",
-          icon: "M12 4.595a5.904 5.904 0 0 0-3.996-1.558 5.942 5.942 0 0 0-4.213 1.758c-2.353 2.363-2.352 6.059.002 8.412l7.332 7.332c.17.299.498.492.875.492a.99.99 0 0 0 .792-.409l7.415-7.415c2.354-2.354 2.354-6.049-.002-8.416a5.938 5.938 0 0 0-4.209-1.754A5.906 5.906 0 0 0 12 4.595zm6.791 1.61c1.563 1.571 1.564 4.025.002 5.588L12 18.586l-6.793-6.793c-1.562-1.563-1.561-4.017-.002-5.584.76-.756 1.754-1.172 2.799-1.172s2.035.416 2.789 1.17l.5.5a.999.999 0 0 0 1.414 0l.5-.5c1.512-1.509 4.074-1.505 5.584-.002z",
+          icon: "Heart",
           bgColor: "#c3dd27",
           href: "/create?cid=relationships",
         },
@@ -349,7 +349,7 @@ export default function Home() {
           title: "Health & Fitness",
           description:
             "Enhance your physical wellbeing and achieve your fitness goals.",
-          icon: "M19.649 5.286 14 8.548V2.025h-4v6.523L4.351 5.286l-2 3.465 5.648 3.261-5.648 3.261 2 3.465L10 15.477V22h4v-6.523l5.649 3.261 2-3.465-5.648-3.261 5.648-3.261z",
+          icon: "Star",
           bgColor: "#f4bccb",
           href: "/create?cid=health",
         },
@@ -357,7 +357,7 @@ export default function Home() {
           title: "Wealth & Abundance",
           description:
             "Attract financial prosperity and develop an abundance mindset.",
-          icon: "M12 22c3.976 0 8-1.374 8-4V6c0-2.626-4.024-4-8-4S4 3.374 4 6v12c0 2.626 4.024 4 8 4zm0-2c-3.722 0-6-1.295-6-2v-1.268C7.541 17.57 9.777 18 12 18s4.459-.43 6-1.268V18c0 .705-2.278 2-6 2zm0-16c3.722 0 6 1.295 6 2s-2.278 2-6 2-6-1.295-6-2 2.278-2 6-2zM6 8.732C7.541 9.57 9.777 10 12 10s4.459-.43 6-1.268V10c0 .705-2.278 2-6 2s-6-1.295-6-2V8.732zm0 4C7.541 13.57 9.777 14 12 14s4.459-.43 6-1.268V14c0 .705-2.278 2-6 2s-6-1.295-6-2v-1.268z",
+          icon: "Database",
           bgColor: "#ba3a67",
           href: "/create?cid=wealth",
         },

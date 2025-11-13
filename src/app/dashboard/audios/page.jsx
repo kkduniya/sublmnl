@@ -371,7 +371,7 @@ export default function UserAudiosPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold">My Audio Library</h1>
         <Button
-          onClick={() => (router.push("/create"))}
+          onClick={() => (router.push("/dashboard/create"))}
           className="flex items-center gap-2 bg-gray-200 text-gray-900 hover:bg-gray-300"
         >
           <Plus className="h-4 w-4" />
@@ -431,7 +431,7 @@ export default function UserAudiosPage() {
                 <Music2 className="h-12 w-12 mx-auto text-gray-500 mb-4" />
                 <h3 className="text-xl font-medium text-gray-300 mb-2">No audio tracks yet</h3>
                 <p className="text-gray-400 mb-6">Create your first subliminal audio track to get started</p>
-                <Button onClick={() => (window.location.href = "/create")}>Create Your First Audio</Button>
+                <Button onClick={() => (router.push("/dashboard/create"))}>Create Your First Audio</Button>
               </div>
             ) : (
               <div className="space-y-2">

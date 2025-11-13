@@ -24,10 +24,10 @@ export default function ThemeManager() {
     fetchThemes()
 
     // Get the current theme ID from localStorage
-    const storedThemeId = localStorage.getItem("current-theme-id")
-    if (storedThemeId) {
-      setCurrentThemeId(storedThemeId)
-    }
+    // const storedThemeId = localStorage.getItem("current-theme-id")
+    // if (storedThemeId) {
+    //   setCurrentThemeId(storedThemeId)
+    // }
   }, [])
 
   // Fetch themes from the API
@@ -466,8 +466,8 @@ export default function ThemeManager() {
       if (activePalette.colors.length >= 2) root.style.setProperty("--gradient-end", activePalette.colors[1])
 
       // Store the current theme ID in localStorage and state
-      localStorage.setItem("current-theme-id", theme._id)
-      setCurrentThemeId(theme._id)
+      // localStorage.setItem("current-theme-id", theme._id)
+      // setCurrentThemeId(theme._id)
 
       // Dispatch a custom event that components can listen for
       const themeChangeEvent = new CustomEvent("themechange", { detail: theme })

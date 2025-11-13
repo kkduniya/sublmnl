@@ -16,7 +16,7 @@ export function LayoutWrapper({ children }) {
   const isCreatePageWithAuth = pathname.startsWith("/create") && status === "authenticated"
 
   // If it's a dashboard path or authenticated create page, don't render Navbar and Footer
-  if (isDashboardPath || isCreatePageWithAuth) {
+  if (isDashboardPath) {
     return children
   }
 

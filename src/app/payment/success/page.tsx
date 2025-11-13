@@ -117,13 +117,13 @@ export default function PaymentSuccessPage() {
               <Button onClick={() => router.push("/dashboard/audios")}>
                 View Your {paymentDetails.metadata?.totalAudios} Purchased Tracks
               </Button>
-              <Button variant="outline" onClick={() => router.push("/create")}>
+              <Button variant="outline" onClick={() => router.push("/dashboard/create")}>
                 Create More Audio
               </Button>
             </>
           ) : paymentDetails?.mode === "subscription" ? (
             <>
-              <Button onClick={() => router.push("/create")}>Create Your First Audio</Button>
+              <Button onClick={() => router.push("/dashboard/create")}>Create Your First Audio</Button>
               <Button variant="outline" onClick={() => router.push("/dashboard/audios")}>
                 View Your Library
               </Button>
@@ -131,7 +131,7 @@ export default function PaymentSuccessPage() {
           ) : (
             <>
               <Button onClick={() => router.push("/dashboard/audios")}>View Your Purchased Audio</Button>
-              <Button variant="outline" onClick={() => router.push("/create")}>
+              <Button variant="outline" onClick={() => router.push("/dashboard/create")}>
                 Create More Audio
               </Button>
             </>

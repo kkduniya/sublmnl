@@ -6,7 +6,7 @@ export default function TermsPage() {
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">Terms of Service</h1>
-          <p className="text-gray-400">Last Updated: August 26, 2025</p>
+          <p className="text-gray-400">Last Updated: November 12, 2025</p>
         </div>
 
         <div className="space-y-8 text-gray-300">
@@ -146,14 +146,22 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">8. Governing Law</h2>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">8.  Email Communications &#40; Non-Marketing &#41;</h2>
+            <p className="mb-4">
+              By creating an account and accepting these Terms, you agree to receive essential non-marketing emails from Sublmnl. These include account confirmations, password resets, order and activity notifications, responses to forms you submit, and notices about account changes or deletion. These emails are required for the Service and cannot be opted out of except by deleting your account. <br />
+              Marketing emails are separate and sent only if you explicitly opt in. You may unsubscribe from marketing emails at any time.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">9. Governing Law</h2>
             <p className="mb-4">
               These Terms shall be governed and construed in accordance with the laws of the Province of Ontario and the federal laws of Canada applicable therein. Any legal suit, action, or proceeding arising out of or related to these Terms or the Service shall be instituted exclusively in the courts of the city of Toronto, Ontario.
             </p>
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">9. Changes to These Terms</h2>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">10. Changes to These Terms</h2>
             <p className="mb-4">
               We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.
             </p>
@@ -164,7 +172,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">10. Contact Us</h2>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">11. Contact Us</h2>
             <p className="mb-4">
               If you have any questions about these Terms, please contact us: {" "}
               <a href="mailto:hello@sublmnl.ca" className="text-[#b1d239] hover:text-[#b1d239]/80">hello@sublmnl.ca</a>

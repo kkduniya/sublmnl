@@ -94,10 +94,10 @@ export default function Navbar({ from }) {
            
               <>
                 <Link
-                  href="/create"
+                  href={from === "dashboard" ? "/dashboard/create"  : "/create"}
                   className={`hover:text-opacity-80 transition-colors`}
                   style={{
-                    color: isActive("/create") ? from === "dashboard" ? "#b1d239" : "#1afbff" : "rgb(209, 213, 219)",
+                    color: isActive("/create") ?  "#1afbff" :  isActive("/dashboard/create") ? "#b1d239" :"rgb(209, 213, 219)",
                     "&:hover": { color: from === "dashboard" ? "#b1d239" : primaryColor },
                   }}
                 >

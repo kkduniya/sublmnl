@@ -1,8 +1,7 @@
 import { MongoClient } from "mongodb"
 
 // Make sure your DATABASE_URL is correctly set in your environment variables
-const uri = process.env.DATABASE_URL || "mongodb+srv://kkduniya:bjnrDEC12@cluster0.ivq4nvd.mongodb.net/sublmnl"
-
+const uri = process.env.DATABASE_URL;
 let client
 let clientPromise
 

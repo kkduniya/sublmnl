@@ -134,9 +134,9 @@ export default function SimpleAudioPlayer({ audioUrl, onError, showAffirmations 
           <div className="flex items-center space-x-3 mb-4">
           <button
            
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-700 hover:bg-gray-600 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-gradient-to-r from-[#e4ffa8]/70 to-[#b1d239]/70"
             aria-label={isPlaying ? "Pause" : "Play"}
-            style={{ background: themeSecColor }}
+            // style={{ background: themeSecColor }}
           >
             S
           </button>
@@ -149,9 +149,9 @@ export default function SimpleAudioPlayer({ audioUrl, onError, showAffirmations 
           <div className="flex items-center space-x-3">
             <button
               onClick={togglePlayPause}
-              className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0"
+              className="w-10 h-10 rounded-full transition-colors bg-gradient-to-r from-[#e4ffa8]/70 to-[#b1d239]/70 flex items-center justify-center flex-shrink-0"
               aria-label={isPlaying ? "Pause" : "Play"}
-              style={{ background: themeSecColor }}
+              // style={{ background: themeSecColor }}
             >
               {isPlaying ? (
                 <svg
