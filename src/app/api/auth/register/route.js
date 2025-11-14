@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 
 export async function POST(request) {
   try {
-    const { firstName, lastName, email, password } = await request.json()
+    const { firstName, lastName, email, password , marketingConsent  } = await request.json()
 
     // Validate required fields
     if (!email || !password || !firstName) {
@@ -57,6 +57,9 @@ export async function POST(request) {
               email,
               first_name: firstName,
               last_name: lastName,
+              properties: {
+                marketing_consent: marketingConsent ? "yes" : "no"
+              }
             },
           },
         }),

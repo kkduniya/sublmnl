@@ -18,7 +18,6 @@ export default function TermsPage() {
             </p>
             <p className="mb-4">
               Your access to and use of the Service is conditioned upon your acceptance of and compliance with these Terms. These Terms apply to all visitors, users, and others who wish to access or use the Service.
-
             </p>
             <p className="mb-4">
               By accessing or using the Service, you agree to be bound by these Terms. If you disagree with any part of the terms, then you do not have permission to access the Service.
@@ -146,7 +145,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">8.  Email Communications &#40; Non-Marketing &#41;</h2>
+            <h2 className="text-2xl font-semibold bg-gradient-to-r from-[#e4ffa8]/80 to-[#b1d239]/80 bg-clip-text text-transparent mb-4">8.  Email Communications &#40;Non-Marketing&#41;</h2>
             <p className="mb-4">
               By creating an account and accepting these Terms, you agree to receive essential non-marketing emails from Sublmnl. These include account confirmations, password resets, order and activity notifications, responses to forms you submit, and notices about account changes or deletion. These emails are required for the Service and cannot be opted out of except by deleting your account. <br />
               Marketing emails are separate and sent only if you explicitly opt in. You may unsubscribe from marketing emails at any time.

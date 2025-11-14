@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "@/components/ui/use-toast"
@@ -19,6 +19,7 @@ export default function MusicPage() {
   const [loading, setLoading] = useState(true)
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null)
   const [audioElement, setAudioElement] = useState(null)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     // Check if user is admin
@@ -95,51 +96,40 @@ export default function MusicPage() {
     }
   }
 
-  const handlePlayPreview = (track) => {
-    try {
-      // If we're already playing this track, stop it
-      if (currentlyPlaying && currentlyPlaying._id === track._id) {
-        audioElement.pause()
-        setCurrentlyPlaying(null)
-        setAudioElement(null)
-        return
-      }
-
-      // If we're playing a different track, stop the current one
-      if (audioElement) {
-        audioElement.pause()
-      }
-
-      // Create a new audio element
-      const audio = new Audio(track.path)
-
-      // Add event listeners
-      audio.addEventListener("ended", () => {
-        setCurrentlyPlaying(null)
-        setAudioElement(null)
-      })
-
-      // Play the audio
-      audio.play().catch((err) => {
-        console.error("Error playing audio:", err)
-        toast({
-          title: "Playback Error",
-          description: `Failed to play audio: ${err.message}`,
-          variant: "destructive",
-        })
-      })
-
-      // Update state
-      setCurrentlyPlaying(track)
-      setAudioElement(audio)
-    } catch (error) {
-      console.error("Error handling audio playback:", error)
-      toast({
-        title: "Playback Error",
-        description: `Audio playback error: ${error.message}`,
-        variant: "destructive",
-      })
+  useEffect(() => {
+  return () => {
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current = null
     }
+  }
+}, [])
+
+  const handlePlayPreview = (track) => {
+    // If same song playing -> pause
+    if (currentlyPlaying && currentlyPlaying._id === track._id) {
+      audioRef.current.pause()
+      audioRef.current = null
+      setCurrentlyPlaying(null)
+      return
+    }
+
+    // Pause previous track if another is playing
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+
+    const audio = new Audio(track.path)
+
+    audio.addEventListener("ended", () => {
+      setCurrentlyPlaying(null)
+      audioRef.current = null
+    })
+
+    audio.play().catch(err => console.error(err))
+
+    audioRef.current = audio
+    setCurrentlyPlaying(track)
   }
 
   if (error) {

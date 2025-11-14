@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect,useRef  } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "@/components/ui/use-toast"
@@ -18,6 +18,7 @@ export default function FrequencyPage() {
   const [loading, setLoading] = useState(true)
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null)
   const [audioElement, setAudioElement] = useState(null)
+  const audioRef = useRef(null)
 
   useEffect(() => {
     // Redirect if not admin
@@ -88,41 +89,46 @@ export default function FrequencyPage() {
     }
   }
 
-  const handlePlayPreview = (frequency) => {
-    try {
-      if (currentlyPlaying && currentlyPlaying._id === frequency._id) {
-        audioElement.pause()
-        setCurrentlyPlaying(null)
-        setAudioElement(null)
-        return
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
       }
+    }
+  }, [])
 
-      if (audioElement) audioElement.pause()
+  const handlePlayPreview = (frequency) => {
+    // If clicking the same frequency → pause
+    if (currentlyPlaying && currentlyPlaying._id === frequency._id) {
+      audioRef.current.pause()
+      audioRef.current = null
+      setCurrentlyPlaying(null)
+      return
+    }
 
-      const audio = new Audio(frequency.path)
+    // Pause previous audio if any
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
 
-      audio.addEventListener("ended", () => {
-        setCurrentlyPlaying(null)
-        setAudioElement(null)
-      })
+    const audio = new Audio(frequency.path)
 
-      audio.play().catch((err) => {
-        toast({
-          title: "Playback Error",
-          description: `Failed to play audio: ${err.message}`,
-          variant: "destructive",
-        })
-      })
+    audio.addEventListener("ended", () => {
+      setCurrentlyPlaying(null)
+      audioRef.current = null
+    })
 
-      setCurrentlyPlaying(frequency)
-      setAudioElement(audio)
-    } catch (error) {
+    audio.play().catch((err) => {
       toast({
         title: "Playback Error",
-        description: `Audio playback error: ${error.message}`,
+        description: `Failed to play audio: ${err.message}`,
         variant: "destructive",
       })
-    }
+    })
+
+    audioRef.current = audio
+    setCurrentlyPlaying(frequency)
   }
 
   if (error) {

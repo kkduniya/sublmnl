@@ -3,9 +3,19 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function ProfilePage() {
-  const { user, updateProfile, requireAuth } = useAuth()
+  const { user, updateProfile, requireAuth,logout } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -23,6 +33,10 @@ export default function ProfilePage() {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false)
   const [subscription, setSubscription] = useState('free')
   const [userProfileLoading, setUserProfileLoading] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     if (!requireAuth()) return
@@ -145,6 +159,48 @@ export default function ProfilePage() {
     setIsPasswordLoading(false);
   }
 };
+
+  const handleLogout = async () => {
+    logout()
+    router.push("/")
+  }
+
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      setIsDeleting(true)
+      setError("")
+
+      const response = await fetch("/api/user/profile", {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${user?.id}`,
+          },
+        })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setDeleteDialogOpen(false)
+        setUserToDelete(null)
+        handleLogout()
+      } else {
+        setError(data.message || "Failed to delete user")
+      }
+    } catch (error) {
+      setError("An error occurred while deleting user")
+      console.error(error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
 
   if (!user) {
     return null // This will be handled by requireAuth redirect
@@ -420,16 +476,41 @@ export default function ProfilePage() {
                 Manage Subscription</button>
             </div>
 
-            {/* <div>
-              <h3 className="text-lg font-medium mb-2 text-red-400">Danger Zone</h3>
-              <button className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors">
-                Delete Account
-              </button>
-            </div> */}
+            <div>
+              <h3 className="text-lg font-medium mb-2 text-red-600">Delete Account</h3>
+              <button className="px-6 py-3 bg-red-800/10 text-red-600 font-medium rounded-xl border border-red-700 hover:bg-red-800/20 transition-all duration-300 shadow-sm hover:shadow-md focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 "
+                onClick={() => handleDeleteClick(user)}
+                disabled={user?.role === "admin"}
+                title={user?.role === "admin" ? "You are a admin." : "Delete Account Permanently"}
+              >
+                Delete Account </button>
+            </div>
           </div>
         </div>
         </>
       )}
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-gray-200">
+              Are you sure you want to  permanently delete your account?
+              <span className="font-semibold text-red-400 mt-2 block">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
